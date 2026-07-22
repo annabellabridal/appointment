@@ -619,7 +619,9 @@ const Appointments = (() => {
     );
 
     if (appt.mapsUrl) {
-      wrap.appendChild(el("a", { class: "btn btn-secondary btn-sm", href: appt.mapsUrl, target: "_blank", rel: "noopener", text: "🗺️ Haritada Aç" }));
+      wrap.appendChild(el("a", { class: "btn btn-secondary btn-sm", href: appt.mapsUrl, target: "_blank", rel: "noopener" }, [
+        el("span", { class: "btn-ico", html: Utils.icon("pin", 16) }), "Haritada Aç",
+      ]));
     }
 
     if (files.length) {

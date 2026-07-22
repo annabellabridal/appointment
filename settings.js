@@ -5,7 +5,7 @@
  */
 
 const Settings = (() => {
-  const { el, toast, download, confirmDialog } = Utils;
+  const { el, toast, download, confirmDialog, icon } = Utils;
 
   async function render(container) {
     const [theme, services, defaultFee, notifEnabled, autoBackup] = await Promise.all([
@@ -74,19 +74,23 @@ const Settings = (() => {
     ]));
 
     // Yedekleme
-    const exportBtn = el("button", { class: "btn btn-primary", text: "⬇ JSON Dışa Aktar", onClick: exportData });
+    const exportBtn = el("button", { class: "btn btn-primary", onClick: exportData }, [
+      el("span", { class: "btn-ico", html: icon("download", 16) }), "JSON Dışa Aktar",
+    ]);
     const importInput = el("input", { type: "file", accept: "application/json,.json", style: "display:none" });
-    const importBtn = el("button", { class: "btn btn-secondary", text: "⬆ JSON İçe Aktar", onClick: () => importInput.click() });
+    const importBtn = el("button", { class: "btn btn-secondary", onClick: () => importInput.click() }, [
+      el("span", { class: "btn-ico", html: icon("upload", 16) }), "JSON İçe Aktar",
+    ]);
     importInput.addEventListener("change", (e) => importData(e.target.files[0], container));
 
-    const clearBtn = el("button", { class: "btn btn-danger", text: "🗑 Tüm Verileri Sil", onClick: async () => {
+    const clearBtn = el("button", { class: "btn btn-danger", onClick: async () => {
       if (await confirmDialog("TÜM veriler kalıcı olarak silinsin mi? Bu işlem geri alınamaz.", { title: "Tüm Verileri Sil", danger: true })) {
         await Promise.all(Object.values(DB.STORES).map((s) => DB.clearStore(s)));
         toast("Tüm veriler silindi", "success");
         document.dispatchEvent(new CustomEvent("data:changed", { detail: { type: "all" } }));
         App.applyTheme("dark");
       }
-    } });
+    } }, [el("span", { class: "btn-ico", html: icon("trash", 16) }), "Tüm Verileri Sil"]);
 
     container.appendChild(settingCard("Veri Yönetimi", [
       el("p", { class: "muted", text: "Verileriniz Supabase hesabınızda (bulutta) saklanır. Tek dosya olarak da yedekleyebilirsiniz." }),

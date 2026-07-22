@@ -147,8 +147,47 @@ const Auth = (() => {
       }
     });
 
-    const screen = el("div", { class: "auth-screen" }, [form]);
-    app.appendChild(screen);
+    const feature = (title, desc) => el("div", { class: "lp-feature" }, [
+      el("span", { class: "lp-feature-ico", html: Utils.icon("check", 16) }),
+      el("div", {}, [
+        el("div", { class: "lp-feature-title", text: title }),
+        el("div", { class: "lp-feature-desc", text: desc }),
+      ]),
+    ]);
+
+    const landing = el("div", { class: "landing" }, [
+      el("header", { class: "lp-nav" }, [
+        el("div", { class: "brand" }, [
+          el("span", { class: "brand-logo", html: Utils.icon("wave", 22) }),
+          el("span", { class: "brand-name", text: "Randevu Takip" }),
+        ]),
+        el("a", { class: "btn btn-secondary btn-sm", href: "#giris" }, ["Giriş Yap"]),
+      ]),
+      el("main", { class: "lp-hero" }, [
+        el("section", { class: "lp-copy" }, [
+          el("span", { class: "lp-eyebrow", text: "Randevu & Müşteri Yönetimi" }),
+          el("h1", { class: "lp-title", html: "RANDEVULARINI<br><span class=\"lp-title-dim\">TEK YERDEN</span> YÖNET" }),
+          el("p", { class: "lp-sub", text: "Randevular, müşteriler, gelir ve yapılacaklar tek panelde. Verilerin güvenle bulutta (Supabase) saklanır; CSV/XLSX olarak dışa aktar." }),
+          el("div", { class: "lp-feats" }, [
+            feature("Randevu & Takvim", "Planla, filtrele, hatırlatma al."),
+            feature("Müşteri & Gelir", "Kayıtlar ve tahsilat tek yerde."),
+            feature("CSV / XLSX Dışa Aktarma", "Raporlarını anında indir."),
+          ]),
+          el("figure", { class: "lp-media" }, [
+            el("img", { src: "assets/hero.jpg", alt: "Randevu planlama", loading: "lazy" }),
+          ]),
+        ]),
+        el("section", { class: "lp-panel", id: "giris" }, [
+          el("div", { class: "lp-panel-head" }, [
+            el("span", { class: "lp-panel-eyebrow", text: "Hesabın" }),
+            el("span", { class: "lp-panel-live", text: "Güvenli" }),
+          ]),
+          form,
+        ]),
+      ]),
+    ]);
+
+    app.appendChild(landing);
 
     if (missingConfig) {
       showError("Supabase yapılandırması eksik. config.js dosyasını doldurun.");

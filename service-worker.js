@@ -3,7 +3,7 @@
  * Basit önbellek (cache-first) — uygulama internetsiz de açılsın.
  */
 
-const CACHE = "randevu-takip-v5";
+const CACHE = "randevu-takip-v6";
 const ASSETS = [
   "index.html",
   "style.css",
@@ -24,6 +24,7 @@ const ASSETS = [
   "app.js",
   "manifest.json",
   "assets/icons/icon.svg",
+  "assets/hero.jpg",
 ];
 
 self.addEventListener("install", (e) => {
