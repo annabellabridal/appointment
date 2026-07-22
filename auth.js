@@ -156,6 +156,7 @@ const Auth = (() => {
     ]);
 
     const landing = el("div", { class: "landing" }, [
+      el("img", { class: "lp-bg", src: "assets/hero.jpg", alt: "", "aria-hidden": "true" }),
       el("header", { class: "lp-nav" }, [
         el("div", { class: "brand" }, [
           el("span", { class: "brand-logo", html: Utils.icon("wave", 22) }),
