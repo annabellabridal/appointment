@@ -778,13 +778,13 @@ textarea { resize: vertical; }
 .lp-hero {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(340px, 420px) 1fr;
-  gap: clamp(28px, 5vw, 72px);
+  grid-template-columns: minmax(320px, 400px) minmax(auto, 620px);
+  justify-content: start;
+  gap: clamp(28px, 5vw, 64px);
   align-items: center;
   padding: clamp(32px, 6vw, 80px) clamp(20px, 6vw, 72px);
-  max-width: 1280px;
   width: 100%;
-  margin: 0 auto;
+  margin: 0;
 }
 .lp-copy { text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6); }
 .lp-eyebrow {
