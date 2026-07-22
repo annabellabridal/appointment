@@ -164,6 +164,13 @@ const Auth = (() => {
         el("a", { class: "btn btn-secondary btn-sm", href: "#giris" }, ["Giriş Yap"]),
       ]),
       el("main", { class: "lp-hero" }, [
+        el("section", { class: "lp-panel", id: "giris" }, [
+          el("div", { class: "lp-panel-head" }, [
+            el("span", { class: "lp-panel-eyebrow", text: "Hesabın" }),
+            el("span", { class: "lp-panel-live", text: "Güvenli" }),
+          ]),
+          form,
+        ]),
         el("section", { class: "lp-copy" }, [
           el("span", { class: "lp-eyebrow", text: "Randevu & Müşteri Yönetimi" }),
           el("h1", { class: "lp-title", html: "RANDEVULARINI<br><span class=\"lp-title-dim\">TEK YERDEN</span> YÖNET" }),
@@ -173,16 +180,6 @@ const Auth = (() => {
             feature("Müşteri & Gelir", "Kayıtlar ve tahsilat tek yerde."),
             feature("CSV / XLSX Dışa Aktarma", "Raporlarını anında indir."),
           ]),
-          el("figure", { class: "lp-media" }, [
-            el("img", { src: "assets/hero.jpg", alt: "Randevu planlama", loading: "lazy" }),
-          ]),
-        ]),
-        el("section", { class: "lp-panel", id: "giris" }, [
-          el("div", { class: "lp-panel-head" }, [
-            el("span", { class: "lp-panel-eyebrow", text: "Hesabın" }),
-            el("span", { class: "lp-panel-live", text: "Güvenli" }),
-          ]),
-          form,
         ]),
       ]),
     ]);
