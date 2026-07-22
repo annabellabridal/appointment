@@ -162,7 +162,6 @@ const Auth = (() => {
           el("span", { class: "brand-logo", html: Utils.icon("wave", 22) }),
           el("span", { class: "brand-name", text: "Randevu Takip" }),
         ]),
-        el("a", { class: "btn btn-secondary btn-sm", href: "#giris" }, ["Giriş Yap"]),
       ]),
       el("main", { class: "lp-hero" }, [
         el("section", { class: "lp-panel", id: "giris" }, [
