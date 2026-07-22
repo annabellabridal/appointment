@@ -42,14 +42,14 @@ const Stats = (() => {
       barChart(canvas, months.map((m) => m.label), countByMonth)));
 
     grid.appendChild(chartCard("Aylık Gelir (₺)", (canvas) =>
-      lineChart(canvas, months.map((m) => m.label), revenueByMonth, { color: "#a855f7" })));
+      lineChart(canvas, months.map((m) => m.label), revenueByMonth, { color: "#cfcfcf" })));
 
     grid.appendChild(chartCard("En Çok Alınan Hizmet", (canvas) =>
-      barChart(canvas, topServices.map((s) => shorten(s[0])), topServices.map((s) => s[1]), { color: "#22c55e" }),
+      barChart(canvas, topServices.map((s) => shorten(s[0])), topServices.map((s) => s[1]), { color: "#cfcfcf" }),
       topServices.length === 0));
 
     grid.appendChild(chartCard("En Aktif Müşteri", (canvas) =>
-      barChart(canvas, topCustomers.map((s) => shorten(s[0])), topCustomers.map((s) => s[1]), { color: "#f59e0b" }),
+      barChart(canvas, topCustomers.map((s) => shorten(s[0])), topCustomers.map((s) => s[1]), { color: "#cfcfcf" }),
       topCustomers.length === 0));
 
     container.appendChild(grid);

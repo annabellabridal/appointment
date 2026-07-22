@@ -3,12 +3,14 @@
  * Basit önbellek (cache-first) — uygulama internetsiz de açılsın.
  */
 
-const CACHE = "randevu-takip-v3";
+const CACHE = "randevu-takip-v5";
 const ASSETS = [
   "index.html",
   "style.css",
+  "config.js",
   "db.js",
   "utils.js",
+  "auth.js",
   "appointments.js",
   "dashboard.js",
   "calendar.js",

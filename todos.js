@@ -7,9 +7,9 @@ const Todos = (() => {
   const { el, toast, confirmDialog } = Utils;
 
   const COLUMNS = [
-    { value: "bekliyor", label: "Bekliyor", color: "#f59e0b" },
-    { value: "devam", label: "Devam Ediyor", color: "#3b82f6" },
-    { value: "tamamlandi", label: "Tamamlandı", color: "#22c55e" },
+    { value: "bekliyor", label: "Bekliyor", color: "#8a8a8a" },
+    { value: "devam", label: "Devam Ediyor", color: "#b5b5b5" },
+    { value: "tamamlandi", label: "Tamamlandı", color: "#f0f0f0" },
   ];
 
   let containerRef = null;

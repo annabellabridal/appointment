@@ -51,10 +51,10 @@ const Dashboard = (() => {
     // İstatistik kartları
     const stats = el("div", { class: "stat-grid" });
     stats.append(
-      statCard("Bugünkü Randevu", todays.length, "📅", "var(--accent)"),
-      statCard("Bekleyen İşler", pending.length, "⏳", "#f59e0b"),
-      statCard("Tamamlanan İşler", done.length, "✅", "#22c55e"),
-      statCard("Bu Ayki Tahmini Gelir", formatMoney(monthRevenue), "💰", "#a855f7"),
+      statCard("Bugünkü Randevu", todays.length, "calendar"),
+      statCard("Bekleyen İşler", pending.length, "clock"),
+      statCard("Tamamlanan İşler", done.length, "check"),
+      statCard("Bu Ayki Tahmini Gelir", formatMoney(monthRevenue), "wallet"),
     );
     container.appendChild(stats);
 
@@ -111,9 +111,9 @@ const Dashboard = (() => {
     container.appendChild(cols);
   }
 
-  function statCard(label, value, icon, color) {
-    return el("div", { class: "stat-card", style: `--stat-color:${color}` }, [
-      el("div", { class: "stat-icon", text: icon }),
+  function statCard(label, value, iconName) {
+    return el("div", { class: "stat-card" }, [
+      el("div", { class: "stat-icon", html: Utils.icon(iconName, 20) }),
       el("div", {}, [
         el("div", { class: "stat-value", text: String(value) }),
         el("div", { class: "stat-label", text: label }),

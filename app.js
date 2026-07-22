@@ -8,14 +8,14 @@ const App = (() => {
   const { el, $, debounce } = Utils;
 
   const ROUTES = {
-    dashboard: { label: "Panel", icon: "🏠", render: (c) => Dashboard.render(c) },
-    calendar: { label: "Takvim", icon: "📅", render: (c) => Calendar.render(c) },
-    records: { label: "Randevular", icon: "📋", render: (c) => Records.render(c) },
-    customers: { label: "Müşteriler", icon: "👥", render: (c) => Customers.render(c) },
-    income: { label: "Gelir", icon: "💰", render: (c) => Income.render(c) },
-    todos: { label: "Yapılacaklar", icon: "✔️", render: (c) => Todos.render(c) },
-    stats: { label: "İstatistik", icon: "📊", render: (c) => Stats.render(c) },
-    settings: { label: "Ayarlar", icon: "⚙️", render: (c) => Settings.render(c) },
+    dashboard: { label: "Panel", icon: "home", render: (c) => Dashboard.render(c) },
+    calendar: { label: "Takvim", icon: "calendar", render: (c) => Calendar.render(c) },
+    records: { label: "Randevular", icon: "list", render: (c) => Records.render(c) },
+    customers: { label: "Müşteriler", icon: "users", render: (c) => Customers.render(c) },
+    income: { label: "Gelir", icon: "wallet", render: (c) => Income.render(c) },
+    todos: { label: "Yapılacaklar", icon: "check", render: (c) => Todos.render(c) },
+    stats: { label: "İstatistik", icon: "chart", render: (c) => Stats.render(c) },
+    settings: { label: "Ayarlar", icon: "settings", render: (c) => Settings.render(c) },
   };
 
   let current = "dashboard";
@@ -58,7 +58,7 @@ const App = (() => {
     // Sidebar
     const nav = el("nav", { class: "sidebar" });
     nav.appendChild(el("div", { class: "brand" }, [
-      el("span", { class: "brand-logo", text: "📆" }),
+      el("span", { class: "brand-logo", html: Utils.icon("wave", 22) }),
       el("span", { class: "brand-name", text: "Randevu Takip" }),
     ]));
     const navList = el("div", { class: "nav-list" });
@@ -66,22 +66,24 @@ const App = (() => {
       navList.appendChild(el("a", {
         class: "nav-item", href: `#${key}`, "data-route": key,
         onClick: (e) => { e.preventDefault(); navigate(key); },
-      }, [el("span", { class: "nav-icon", text: r.icon }), el("span", { text: r.label })]));
+      }, [el("span", { class: "nav-icon", html: Utils.icon(r.icon) }), el("span", { text: r.label })]));
     });
     nav.appendChild(navList);
     nav.appendChild(el("button", {
-      class: "btn btn-primary nav-new", text: "＋ Yeni Randevu",
+      class: "btn btn-primary nav-new",
       onClick: () => Appointments.openForm(),
-    }));
+    }, [el("span", { class: "btn-ico", html: Utils.icon("plus", 16) }), "Yeni Randevu"]));
 
     // Topbar
     const topbar = el("header", { class: "topbar" });
-    const menuBtn = el("button", { class: "icon-btn menu-btn", html: "☰", title: "Menü",
+    const menuBtn = el("button", { class: "icon-btn menu-btn", html: Utils.icon("menu", 20), title: "Menü",
       onClick: () => document.body.classList.toggle("nav-open") });
     const search = el("input", { type: "search", class: "global-search", placeholder: "Ara: müşteri, telefon, firma, hizmet, not..." });
     search.addEventListener("input", debounce((e) => globalSearch(e.target.value), 250));
     const themeBtn = el("button", { class: "icon-btn", id: "theme-btn", title: "Tema değiştir", onClick: toggleTheme });
-    topbar.append(menuBtn, search, themeBtn);
+    const logoutBtn = el("button", { class: "icon-btn", id: "logout-btn", title: "Çıkış yap", html: Utils.icon("logout", 20),
+      onClick: () => Auth.signOut() });
+    topbar.append(menuBtn, search, themeBtn, logoutBtn);
 
     // Layout
     const main = el("main", { class: "main" });
@@ -134,7 +136,7 @@ const App = (() => {
     const btn = $("#theme-btn");
     if (!btn) return;
     const isLight = document.documentElement.getAttribute("data-theme") === "light";
-    btn.innerHTML = isLight ? "🌙" : "☀️";
+    btn.innerHTML = Utils.icon(isLight ? "moon" : "sun", 20);
   }
 
   // Global arama -------------------------------------------------------------
@@ -193,4 +195,7 @@ const App = (() => {
 
 window.App = App;
 
-document.addEventListener("DOMContentLoaded", () => App.init());
+document.addEventListener("DOMContentLoaded", async () => {
+  await Auth.ensure();
+  App.init();
+});

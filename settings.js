@@ -89,11 +89,11 @@ const Settings = (() => {
     } });
 
     container.appendChild(settingCard("Veri Yönetimi", [
-      el("p", { class: "muted", text: "Tüm verileriniz cihazınızda (IndexedDB) saklanır. Tek dosya olarak yedekleyebilirsiniz." }),
+      el("p", { class: "muted", text: "Verileriniz Supabase hesabınızda (bulutta) saklanır. Tek dosya olarak da yedekleyebilirsiniz." }),
       el("div", { class: "setting-actions" }, [exportBtn, importBtn, importInput, clearBtn]),
     ]));
 
-    container.appendChild(el("p", { class: "muted center", text: "Randevu & Müşteri Takip · Tamamen offline · v1.0" }));
+    container.appendChild(el("p", { class: "muted center", text: "Randevu & Müşteri Takip · Supabase + Vercel · v2.0" }));
   }
 
   async function exportData() {

@@ -18,9 +18,9 @@ const Income = (() => {
     container.appendChild(el("div", { class: "page-head" }, [el("h1", { text: "Gelir Takibi" })]));
 
     container.appendChild(el("div", { class: "stat-grid" }, [
-      statCard("Toplam Anlaşılan", formatMoney(totalFee), "📊", "var(--accent)"),
-      statCard("Tahsil Edilen", formatMoney(totalPaid), "💵", "#22c55e"),
-      statCard("Kalan Ödeme", formatMoney(totalRemaining), "⏳", "#f59e0b"),
+      statCard("Toplam Anlaşılan", formatMoney(totalFee), "chart"),
+      statCard("Tahsil Edilen", formatMoney(totalPaid), "cash"),
+      statCard("Kalan Ödeme", formatMoney(totalRemaining), "clock"),
     ]));
 
     if (appointments.length === 0) {
@@ -53,9 +53,9 @@ const Income = (() => {
     container.appendChild(table);
   }
 
-  function statCard(label, value, icon, color) {
-    return el("div", { class: "stat-card", style: `--stat-color:${color}` }, [
-      el("div", { class: "stat-icon", text: icon }),
+  function statCard(label, value, iconName) {
+    return el("div", { class: "stat-card" }, [
+      el("div", { class: "stat-icon", html: Utils.icon(iconName, 20) }),
       el("div", {}, [
         el("div", { class: "stat-value", text: String(value) }),
         el("div", { class: "stat-label", text: label }),
