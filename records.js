@@ -5,7 +5,23 @@
  */
 
 const Records = (() => {
-  const { el, debounce, formatMoney } = Utils;
+  const { el, debounce, formatMoney, icon, toast } = Utils;
+
+  const EXPORT_COLUMNS = [
+    ["Tarih", (a) => a.date || ""],
+    ["Saat", (a) => a.time || ""],
+    ["Müşteri", (a) => a.customerName || ""],
+    ["Telefon", (a) => a.phone || ""],
+    ["Firma", (a) => a.company || ""],
+    ["Hizmet", (a) => a.service || ""],
+    ["Proje", (a) => a.project || ""],
+    ["Tahmini Ücret", (a) => Number(a.fee) || 0],
+    ["Tahsil Edilen", (a) => Number(a.paid) || 0],
+    ["Ödeme Durumu", (a) => Constants.paymentMeta(a.payment).label],
+    ["Durum", (a) => Constants.statusMeta(a.status).label],
+    ["Öncelik", (a) => Constants.priorityMeta(a.priority).label],
+    ["Notlar", (a) => a.notes || ""],
+  ];
 
   const filters = {
     q: "",
@@ -33,16 +49,31 @@ const Records = (() => {
   function draw() {
     const container = containerRef;
     container.innerHTML = "";
+    const filtered = applyFilters();
+
     container.appendChild(
       el("div", { class: "page-head" }, [
         el("h1", { text: "Randevular" }),
-        el("button", { class: "btn btn-primary", onClick: () => Appointments.openForm() }, ["＋ Yeni Randevu"]),
+        el("div", { class: "page-actions" }, [
+          el("button", {
+            class: "btn btn-secondary btn-sm", title: "CSV olarak indir",
+            disabled: filtered.length === 0 ? "" : null,
+            onClick: () => exportCsv(),
+          }, [el("span", { class: "btn-ico", html: icon("download", 16) }), "CSV"]),
+          el("button", {
+            class: "btn btn-secondary btn-sm", title: "Excel (XLSX) olarak indir",
+            disabled: filtered.length === 0 ? "" : null,
+            onClick: () => exportXlsx(),
+          }, [el("span", { class: "btn-ico", html: icon("download", 16) }), "XLSX"]),
+          el("button", { class: "btn btn-primary", onClick: () => Appointments.openForm() }, [
+            el("span", { class: "btn-ico", html: icon("plus", 16) }), "Yeni Randevu",
+          ]),
+        ]),
       ])
     );
 
     container.appendChild(filterBar());
 
-    const filtered = applyFilters();
     const listWrap = el("div", { class: "records-list" });
 
     if (filtered.length === 0) {
@@ -122,6 +153,42 @@ const Records = (() => {
         el("span", { class: "badge", style: `background:${pay.color}22;color:${pay.color}`, text: pay.label }),
       ]),
     ]);
+  }
+
+  function sortedFiltered() {
+    return applyFilters().sort((a, b) =>
+      `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
+  }
+
+  function buildRows() {
+    const rows = [EXPORT_COLUMNS.map((c) => c[0])];
+    sortedFiltered().forEach((a) => rows.push(EXPORT_COLUMNS.map((c) => c[1](a))));
+    return rows;
+  }
+
+  function fileStamp() {
+    const d = new Date();
+    const p = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+  }
+
+  function exportCsv() {
+    const rows = buildRows();
+    if (rows.length <= 1) return toast("Dışa aktarılacak randevu yok.", "info");
+    Utils.download(`randevular-${fileStamp()}.csv`, Utils.csvFromRows(rows), "text/csv;charset=utf-8");
+    toast(`${rows.length - 1} randevu CSV olarak indirildi.`, "success");
+  }
+
+  function exportXlsx() {
+    const rows = buildRows();
+    if (rows.length <= 1) return toast("Dışa aktarılacak randevu yok.", "info");
+    try {
+      Utils.downloadBlob(`randevular-${fileStamp()}.xlsx`, Utils.xlsxFromRows(rows, "Randevular"));
+      toast(`${rows.length - 1} randevu XLSX olarak indirildi.`, "success");
+    } catch (e) {
+      console.error(e);
+      toast("XLSX oluşturulamadı.", "error");
+    }
   }
 
   return { render };

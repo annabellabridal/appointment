@@ -63,6 +63,17 @@ python3 -m http.server 5173
 
 `config.js` doldurulmadan giriş ekranı bir yapılandırma uyarısı gösterir.
 
+## Randevuları dışa aktarma (CSV / XLSX)
+
+**Randevular** sayfasındaki **CSV** ve **XLSX** düğmeleri, o an ekranda görünen
+(filtrelenmiş) randevuları indirir. Sütunlar: tarih, saat, müşteri, telefon,
+firma, hizmet, proje, tahmini ücret, tahsil edilen, ödeme durumu, durum,
+öncelik, notlar.
+
+- CSV: UTF-8 (BOM'lu, Türkçe karakter uyumlu), tırnak/virgül/yeni satır kaçışlı.
+- XLSX: harici kütüphane/CDN kullanılmadan, tarayıcıda gerçek bir `.xlsx`
+  (OOXML) dosyası üretilir (`Utils.xlsxFromRows`). Çevrimdışı da çalışır.
+
 ## Yedekleme
 
 Ayarlar sayfasından tüm verileri JSON olarak dışa/içe aktarabilirsiniz

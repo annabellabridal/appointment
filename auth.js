@@ -100,7 +100,7 @@ const Auth = (() => {
 
     const form = el("form", { class: "auth-form" }, [
       el("div", { class: "auth-brand" }, [
-        el("span", { class: "auth-logo", text: "📆" }),
+        el("span", { class: "auth-logo", html: Utils.icon("wave", 30) }),
         el("h1", { text: "Randevu & Müşteri Takip" }),
       ]),
       emailInput,

@@ -362,6 +362,153 @@ const Utils = (() => {
     ctx.closePath();
   }
 
+  // Monokrom (tek renk) line ikon seti -----------------------------------
+  const ICON_PATHS = {
+    wave: '<path d="M2 16L8 6l8 12 6-10"/>',
+    home: '<path d="M3 10.5L12 3l9 7.5"/><path d="M5 9v11h5v-6h4v6h5V9"/>',
+    calendar: '<rect x="3" y="4.5" width="18" height="16"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/>',
+    list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+    users: '<path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="3.5"/><path d="M22 20v-2a4 4 0 0 0-3-3.87M16 3.5a4 4 0 0 1 0 7"/>',
+    wallet: '<path d="M3 6h15v3H3zM3 6v13h18V9"/><path d="M16 13h5v-3"/><path d="M16.5 13.5h.01"/>',
+    check: '<path d="M4 12l5 5L20 6"/>',
+    chart: '<path d="M4 20V4M4 20h16"/><path d="M8 20v-6M13 20V9M18 20v-9"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>',
+    download: '<path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/><path d="M12 4v11M7 10l5 5 5-5"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+    menu: '<path d="M3 6h18M3 12h18M3 18h18"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>',
+    logout: '<path d="M9 21H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4"/><path d="M15 17l5-5-5-5M20 12H9"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    cash: '<rect x="2" y="6" width="20" height="12"/><circle cx="12" cy="12" r="2.5"/>',
+  };
+
+  function icon(name, size = 18) {
+    const p = ICON_PATHS[name];
+    if (!p) return "";
+    return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">${p}</svg>`;
+  }
+
+  // Dışa aktarma (CSV / XLSX) --------------------------------------------
+  function downloadBlob(filename, blob) {
+    const url = URL.createObjectURL(blob);
+    const a = el("a", { href: url, download: filename });
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // rows: dizi dizisi (ilk satır başlıklar). CSV metni üretir.
+  function csvFromRows(rows, sep = ",") {
+    const esc = (v) => {
+      const s = v === null || v === undefined ? "" : String(v);
+      return /[",\n\r;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    return "\uFEFF" + rows.map((r) => r.map(esc).join(sep)).join("\r\n");
+  }
+
+  // Bağımsız (kütüphanesiz) minimal XLSX üretimi -------------------------
+  function _crc32(buf) {
+    let crc = ~0;
+    for (let i = 0; i < buf.length; i++) {
+      crc ^= buf[i];
+      for (let j = 0; j < 8; j++) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+    }
+    return (~crc) >>> 0;
+  }
+
+  function _zip(files) {
+    const enc = new TextEncoder();
+    const parts = [];
+    const central = [];
+    let offset = 0;
+
+    const u16 = (n) => [n & 0xff, (n >>> 8) & 0xff];
+    const u32 = (n) => [n & 0xff, (n >>> 8) & 0xff, (n >>> 16) & 0xff, (n >>> 24) & 0xff];
+
+    files.forEach((f) => {
+      const nameBytes = enc.encode(f.name);
+      const data = typeof f.data === "string" ? enc.encode(f.data) : f.data;
+      const crc = _crc32(data);
+      const local = [].concat(
+        u32(0x04034b50), u16(20), u16(0x0800), u16(0), u16(0), u16(0),
+        u32(crc), u32(data.length), u32(data.length),
+        u16(nameBytes.length), u16(0)
+      );
+      parts.push(new Uint8Array(local), nameBytes, data);
+      central.push({ crc, size: data.length, nameBytes, offset });
+      offset += local.length + nameBytes.length + data.length;
+    });
+
+    const cdParts = [];
+    let cdSize = 0;
+    central.forEach((c) => {
+      const hdr = [].concat(
+        u32(0x02014b50), u16(20), u16(20), u16(0x0800), u16(0), u16(0), u16(0),
+        u32(c.crc), u32(c.size), u32(c.size),
+        u16(c.nameBytes.length), u16(0), u16(0), u16(0), u16(0),
+        u32(0), u32(c.offset)
+      );
+      cdParts.push(new Uint8Array(hdr), c.nameBytes);
+      cdSize += hdr.length + c.nameBytes.length;
+    });
+
+    const end = new Uint8Array([].concat(
+      u32(0x06054b50), u16(0), u16(0),
+      u16(central.length), u16(central.length),
+      u32(cdSize), u32(offset), u16(0)
+    ));
+
+    return new Blob([...parts, ...cdParts, end], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+  }
+
+  function _colRef(n) {
+    let s = "";
+    n += 1;
+    while (n > 0) {
+      const r = (n - 1) % 26;
+      s = String.fromCharCode(65 + r) + s;
+      n = Math.floor((n - 1) / 26);
+    }
+    return s;
+  }
+
+  // rows: dizi dizisi (ilk satır başlıklar). Gerçek .xlsx Blob'u döndürür.
+  function xlsxFromRows(rows, sheetName = "Sayfa1") {
+    const xmlEsc = (s) => String(s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+    const sheetRows = rows.map((row, ri) => {
+      const cells = row.map((val, ci) => {
+        const ref = _colRef(ci) + (ri + 1);
+        const isNum = typeof val === "number" && Number.isFinite(val);
+        if (isNum) return `<c r="${ref}"><v>${val}</v></c>`;
+        const text = val === null || val === undefined ? "" : String(val);
+        return `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${xmlEsc(text)}</t></is></c>`;
+      }).join("");
+      return `<row r="${ri + 1}">${cells}</row>`;
+    }).join("");
+
+    const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${sheetRows}</sheetData></worksheet>`;
+    const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${xmlEsc(sheetName).slice(0, 31)}" sheetId="1" r:id="rId1"/></sheets></workbook>`;
+    const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`;
+    const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>`;
+    const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
+
+    return _zip([
+      { name: "[Content_Types].xml", data: contentTypes },
+      { name: "_rels/.rels", data: rootRels },
+      { name: "xl/workbook.xml", data: workbook },
+      { name: "xl/_rels/workbook.xml.rels", data: workbookRels },
+      { name: "xl/worksheets/sheet1.xml", data: sheetXml },
+    ]);
+  }
+
   return {
     $, $$, el, escapeHtml,
     MONTHS_TR, DAYS_TR, pad,
@@ -370,8 +517,9 @@ const Utils = (() => {
     formatMoney,
     toast, modal, confirmDialog,
     requestNotificationPermission, notify,
-    fileToDataURL, humanSize, download, debounce, uid,
+    fileToDataURL, humanSize, download, downloadBlob, debounce, uid,
     barChart, lineChart,
+    icon, csvFromRows, xlsxFromRows,
   };
 })();
 

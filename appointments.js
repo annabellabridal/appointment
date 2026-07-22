@@ -5,21 +5,22 @@
 
 // Uygulama genelinde kullanılan sabitler
 const Constants = {
+  // Monokrom palet: gri tonları (siyah / antrasit / açık gri)
   STATUSES: [
-    { value: "toplanti", label: "Toplantı", color: "#3b82f6" },   // Mavi
-    { value: "bekliyor", label: "Bekliyor", color: "#f59e0b" },   // Turuncu
-    { value: "tamamlandi", label: "Tamamlandı", color: "#22c55e" }, // Yeşil
-    { value: "iptal", label: "İptal", color: "#ef4444" },         // Kırmızı
+    { value: "toplanti", label: "Toplantı", color: "#8a8a8a" },
+    { value: "bekliyor", label: "Bekliyor", color: "#b5b5b5" },
+    { value: "tamamlandi", label: "Tamamlandı", color: "#f0f0f0" },
+    { value: "iptal", label: "İptal", color: "#5a5a5a" },
   ],
   PRIORITIES: [
-    { value: "dusuk", label: "Düşük", color: "#22c55e" },
-    { value: "orta", label: "Orta", color: "#f59e0b" },
-    { value: "yuksek", label: "Yüksek", color: "#ef4444" },
+    { value: "dusuk", label: "Düşük", color: "#6a6a6a" },
+    { value: "orta", label: "Orta", color: "#9a9a9a" },
+    { value: "yuksek", label: "Yüksek", color: "#e8e8e8" },
   ],
   PAYMENT: [
-    { value: "odenmedi", label: "Ödenmedi", color: "#ef4444" },
-    { value: "kismi", label: "Kısmi", color: "#f59e0b" },
-    { value: "odendi", label: "Ödendi", color: "#22c55e" },
+    { value: "odenmedi", label: "Ödenmedi", color: "#6a6a6a" },
+    { value: "kismi", label: "Kısmi", color: "#a5a5a5" },
+    { value: "odendi", label: "Ödendi", color: "#f0f0f0" },
   ],
   statusMeta(v) {
     return this.STATUSES.find((s) => s.value === v) || this.STATUSES[0];
