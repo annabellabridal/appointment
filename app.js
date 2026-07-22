@@ -81,7 +81,9 @@ const App = (() => {
     const search = el("input", { type: "search", class: "global-search", placeholder: "Ara: müşteri, telefon, firma, hizmet, not..." });
     search.addEventListener("input", debounce((e) => globalSearch(e.target.value), 250));
     const themeBtn = el("button", { class: "icon-btn", id: "theme-btn", title: "Tema değiştir", onClick: toggleTheme });
-    topbar.append(menuBtn, search, themeBtn);
+    const logoutBtn = el("button", { class: "icon-btn", id: "logout-btn", title: "Çıkış yap", html: "⎋",
+      onClick: () => Auth.signOut() });
+    topbar.append(menuBtn, search, themeBtn, logoutBtn);
 
     // Layout
     const main = el("main", { class: "main" });
@@ -193,4 +195,7 @@ const App = (() => {
 
 window.App = App;
 
-document.addEventListener("DOMContentLoaded", () => App.init());
+document.addEventListener("DOMContentLoaded", async () => {
+  await Auth.ensure();
+  App.init();
+});

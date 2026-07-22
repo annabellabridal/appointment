@@ -1,12 +1,17 @@
 /**
  * db.js
- * IndexedDB veri katmanı. Tüm CRUD işlemleri Promise tabanlıdır.
- * Store'lar: customers, appointments, todos, files, settings
+ * Supabase (PostgreSQL) veri katmanı.
+ *
+ * Eski sürüm IndexedDB kullanıyordu; bu sürüm aynı genel API'yi (DB.customers,
+ * DB.appointments, DB.todos, DB.files, DB.settings, exportAll/importAll ...)
+ * korur, böylece özellik modüllerinde değişiklik gerekmez. Fark: veriler
+ * bulutta Supabase'de saklanır ve giriş yapan kullanıcıya (RLS) bağlıdır.
+ *
+ * Tablolar `data jsonb` sütununda kaydın tamamını tutar; okurken satır
+ * { id, ...data } biçimine dönüştürülür, böylece esnek şema korunur.
  */
 
 const DB = (() => {
-  const DB_NAME = "randevu_takip";
-  const DB_VERSION = 1;
   const STORES = {
     customers: "customers",
     appointments: "appointments",
@@ -15,149 +20,128 @@ const DB = (() => {
     settings: "settings",
   };
 
-  let dbPromise = null;
+  // Hangi jsonb kaydından hangi ilişkisel sütun türetilecek.
+  const RELATIONAL_COLUMNS = {
+    appointments: { customer_id: "customerId" },
+    files: { appointment_id: "appointmentId" },
+  };
 
-  function open() {
-    if (dbPromise) return dbPromise;
-    dbPromise = new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, DB_VERSION);
+  // getAllByIndex(indexName) -> gerçek sütun adı eşlemesi.
+  const INDEX_TO_COLUMN = {
+    customerId: "customer_id",
+    appointmentId: "appointment_id",
+  };
 
-      req.onupgradeneeded = (e) => {
-        const db = e.target.result;
+  let client = null;
 
-        if (!db.objectStoreNames.contains(STORES.customers)) {
-          const s = db.createObjectStore(STORES.customers, {
-            keyPath: "id",
-            autoIncrement: true,
-          });
-          s.createIndex("name", "name", { unique: false });
-          s.createIndex("phone", "phone", { unique: false });
-          s.createIndex("company", "company", { unique: false });
-        }
-
-        if (!db.objectStoreNames.contains(STORES.appointments)) {
-          const s = db.createObjectStore(STORES.appointments, {
-            keyPath: "id",
-            autoIncrement: true,
-          });
-          s.createIndex("date", "date", { unique: false });
-          s.createIndex("customerId", "customerId", { unique: false });
-          s.createIndex("status", "status", { unique: false });
-        }
-
-        if (!db.objectStoreNames.contains(STORES.todos)) {
-          db.createObjectStore(STORES.todos, {
-            keyPath: "id",
-            autoIncrement: true,
-          });
-        }
-
-        if (!db.objectStoreNames.contains(STORES.files)) {
-          const s = db.createObjectStore(STORES.files, {
-            keyPath: "id",
-            autoIncrement: true,
-          });
-          s.createIndex("appointmentId", "appointmentId", { unique: false });
-        }
-
-        if (!db.objectStoreNames.contains(STORES.settings)) {
-          db.createObjectStore(STORES.settings, { keyPath: "key" });
-        }
-      };
-
-      req.onsuccess = (e) => resolve(e.target.result);
-      req.onerror = (e) => reject(e.target.error);
+  function sb() {
+    if (client) return client;
+    const cfg = window.APP_CONFIG || {};
+    if (!window.supabase || !cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
+      throw new Error(
+        "Supabase yapılandırması eksik. config.js içindeki SUPABASE_URL ve SUPABASE_ANON_KEY değerlerini doldurun."
+      );
+    }
+    client = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true },
     });
-    return dbPromise;
+    return client;
   }
 
-  async function tx(storeName, mode, fn) {
-    const db = await open();
-    return new Promise((resolve, reject) => {
-      const t = db.transaction(storeName, mode);
-      const store = t.objectStore(storeName);
-      let result;
-      try {
-        result = fn(store);
-      } catch (err) {
-        reject(err);
-        return;
+  function check(error) {
+    if (error) throw new Error(error.message || String(error));
+  }
+
+  // Satır <-> nesne dönüşümü ---------------------------------------------------
+
+  function rowToObj(row) {
+    if (!row) return row;
+    const data = row.data || {};
+    return { ...data, id: row.id };
+  }
+
+  function objToRow(table, obj) {
+    const { id, ...rest } = obj || {};
+    const row = { data: rest };
+    if (id !== undefined && id !== null && id !== "") row.id = id;
+    const rel = RELATIONAL_COLUMNS[table];
+    if (rel) {
+      for (const [col, field] of Object.entries(rel)) {
+        const v = rest[field];
+        row[col] = v === undefined || v === "" ? null : v;
       }
-      t.oncomplete = () => resolve(result && result.__value !== undefined ? result.__value : result);
-      t.onerror = () => reject(t.error);
-      t.onabort = () => reject(t.error);
-    });
+    }
+    return row;
   }
 
-  function reqToValue(request, holder) {
-    request.onsuccess = () => {
-      holder.__value = request.result;
-    };
+  // Genel yardımcılar ----------------------------------------------------------
+
+  async function add(table, obj) {
+    const { data, error } = await sb()
+      .from(table)
+      .insert(objToRow(table, obj))
+      .select("id")
+      .single();
+    check(error);
+    return data.id;
   }
 
-  // Generic helpers -----------------------------------------------------------
-
-  async function add(storeName, obj) {
-    const holder = {};
-    await tx(storeName, "readwrite", (store) => {
-      reqToValue(store.add(obj), holder);
-      return holder;
-    });
-    return holder.__value; // new key
+  async function put(table, obj) {
+    const { data, error } = await sb()
+      .from(table)
+      .upsert(objToRow(table, obj))
+      .select("id")
+      .single();
+    check(error);
+    return data.id;
   }
 
-  async function put(storeName, obj) {
-    const holder = {};
-    await tx(storeName, "readwrite", (store) => {
-      reqToValue(store.put(obj), holder);
-      return holder;
-    });
-    return holder.__value;
+  async function get(table, key) {
+    const { data, error } = await sb()
+      .from(table)
+      .select("id, data")
+      .eq("id", key)
+      .maybeSingle();
+    check(error);
+    return rowToObj(data);
   }
 
-  async function get(storeName, key) {
-    const holder = {};
-    await tx(storeName, "readonly", (store) => {
-      reqToValue(store.get(key), holder);
-      return holder;
-    });
-    return holder.__value;
+  async function getAll(table) {
+    const { data, error } = await sb()
+      .from(table)
+      .select("id, data")
+      .order("id", { ascending: true });
+    check(error);
+    return (data || []).map(rowToObj);
   }
 
-  async function getAll(storeName) {
-    const holder = {};
-    await tx(storeName, "readonly", (store) => {
-      reqToValue(store.getAll(), holder);
-      return holder;
-    });
-    return holder.__value || [];
+  async function remove(table, key) {
+    const { error } = await sb().from(table).delete().eq("id", key);
+    check(error);
   }
 
-  async function remove(storeName, key) {
-    await tx(storeName, "readwrite", (store) => {
-      store.delete(key);
-      return {};
-    });
+  async function clear(table) {
+    if (table === STORES.settings) {
+      const { error } = await sb().from(table).delete().not("key", "is", null);
+      check(error);
+      return;
+    }
+    const { error } = await sb().from(table).delete().gte("id", 0);
+    check(error);
   }
 
-  async function clear(storeName) {
-    await tx(storeName, "readwrite", (store) => {
-      store.clear();
-      return {};
-    });
+  async function getAllByIndex(table, indexName, value) {
+    const column = INDEX_TO_COLUMN[indexName] || indexName;
+    const { data, error } = await sb()
+      .from(table)
+      .select("id, data")
+      .eq(column, value)
+      .order("id", { ascending: true });
+    check(error);
+    return (data || []).map(rowToObj);
   }
 
-  async function getAllByIndex(storeName, indexName, value) {
-    const holder = {};
-    await tx(storeName, "readonly", (store) => {
-      const idx = store.index(indexName);
-      reqToValue(idx.getAll(value), holder);
-      return holder;
-    });
-    return holder.__value || [];
-  }
-
-  // Domain-specific -----------------------------------------------------------
+  // Alan bazlı API -------------------------------------------------------------
 
   const customers = {
     all: () => getAll(STORES.customers),
@@ -195,14 +179,51 @@ const DB = (() => {
 
   const settings = {
     get: async (key, fallback) => {
-      const row = await get(STORES.settings, key);
-      return row ? row.value : fallback;
+      const { data, error } = await sb()
+        .from(STORES.settings)
+        .select("value")
+        .eq("key", key)
+        .maybeSingle();
+      check(error);
+      return data && data.value !== null && data.value !== undefined
+        ? data.value
+        : fallback;
     },
-    set: (key, value) => put(STORES.settings, { key, value }),
-    all: () => getAll(STORES.settings),
+    set: async (key, value) => {
+      const uid = await currentUserId();
+      const row = { key, value };
+      if (uid) row.user_id = uid;
+      const { error } = await sb()
+        .from(STORES.settings)
+        .upsert(row, { onConflict: "user_id,key" });
+      check(error);
+    },
+    all: async () => {
+      const { data, error } = await sb()
+        .from(STORES.settings)
+        .select("key, value");
+      check(error);
+      return data || [];
+    },
   };
 
-  // Backup --------------------------------------------------------------------
+  async function currentUserId() {
+    const { data } = await sb().auth.getUser();
+    return data && data.user ? data.user.id : null;
+  }
+
+  // Açılış / oturum ------------------------------------------------------------
+
+  async function open() {
+    // Supabase istemcisini hazırlar; oturum yoksa hata vermez (auth katmanı
+    // giriş ekranını gösterir). Bağlantı testi olarak istemciyi kurar.
+    sb();
+    return true;
+  }
+
+  // Yedekleme ------------------------------------------------------------------
+
+  const DB_VERSION = 2;
 
   async function exportAll() {
     const [c, a, t, f, s] = await Promise.all([
@@ -210,7 +231,7 @@ const DB = (() => {
       getAll(STORES.appointments),
       getAll(STORES.todos),
       getAll(STORES.files),
-      getAll(STORES.settings),
+      settings.all(),
     ]);
     return {
       meta: { app: "randevu-takip", version: DB_VERSION, exportedAt: new Date().toISOString() },
@@ -238,13 +259,14 @@ const DB = (() => {
     (data.appointments || []).forEach((x) => jobs.push(put(STORES.appointments, x)));
     (data.todos || []).forEach((x) => jobs.push(put(STORES.todos, x)));
     (data.files || []).forEach((x) => jobs.push(put(STORES.files, x)));
-    (data.settings || []).forEach((x) => jobs.push(put(STORES.settings, x)));
+    (data.settings || []).forEach((x) => jobs.push(settings.set(x.key, x.value)));
     await Promise.all(jobs);
   }
 
   return {
     STORES,
     open,
+    client: sb,
     customers,
     appointments,
     todos,
