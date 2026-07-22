@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0f17" />
+  <meta name="description" content="Kişisel randevu ve müşteri takip uygulaması - tamamen offline" />
+  <title>Randevu & Müşteri Takip</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- Veri katmanı ve yardımcılar -->
+  <script src="db.js"></script>
+  <script src="utils.js"></script>
+
+  <!-- Özellik modülleri -->
+  <script src="appointments.js"></script>
+  <script src="dashboard.js"></script>
+  <script src="calendar.js"></script>
+  <script src="customers.js"></script>
+  <script src="records.js"></script>
+  <script src="income.js"></script>
+  <script src="todos.js"></script>
+  <script src="stats.js"></script>
+  <script src="settings.js"></script>
+  <script src="reminders.js"></script>
+
+  <!-- Uygulama kabuğu (en son) -->
+  <script src="app.js"></script>
+</body>
+</html>

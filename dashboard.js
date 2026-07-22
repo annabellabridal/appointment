@@ -1,0 +1,136 @@
+/**
+ * dashboard.js
+ * Ana ekran: özet kartları, yaklaşan randevular, son müşteriler.
+ */
+
+const Dashboard = (() => {
+  const { el, formatMoney, formatDate } = Utils;
+
+  async function render(container) {
+    const [appointments, customers] = await Promise.all([
+      DB.appointments.all(),
+      DB.customers.all(),
+    ]);
+
+    const today = Utils.todayStr();
+    const now = new Date();
+
+    const todays = appointments.filter((a) => a.date === today);
+    const upcoming = appointments
+      .filter((a) => a.status !== "iptal" && a.status !== "tamamlandi" && appointmentDateTime(a) >= now)
+      .sort((a, b) => appointmentDateTime(a) - appointmentDateTime(b))
+      .slice(0, 6);
+    const pending = appointments.filter((a) => a.status === "bekliyor");
+    const done = appointments.filter((a) => a.status === "tamamlandi");
+
+    // Bu ayki tahmini gelir (bu ay içindeki randevuların ücret toplamı, iptal hariç)
+    const ym = today.slice(0, 7);
+    const monthRevenue = appointments
+      .filter((a) => (a.date || "").slice(0, 7) === ym && a.status !== "iptal")
+      .reduce((sum, a) => sum + (Number(a.fee) || 0), 0);
+
+    const recentCustomers = [...customers]
+      .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
+      .slice(0, 5);
+
+    container.innerHTML = "";
+
+    // Başlık + Yeni Randevu
+    container.appendChild(
+      el("div", { class: "page-head" }, [
+        el("div", {}, [
+          el("h1", { text: "Panel" }),
+          el("p", { class: "muted", text: formatDate(today) }),
+        ]),
+        el("button", { class: "btn btn-primary btn-lg", onClick: () => Appointments.openForm() }, [
+          el("span", { text: "＋ Yeni Randevu" }),
+        ]),
+      ])
+    );
+
+    // İstatistik kartları
+    const stats = el("div", { class: "stat-grid" });
+    stats.append(
+      statCard("Bugünkü Randevu", todays.length, "📅", "var(--accent)"),
+      statCard("Bekleyen İşler", pending.length, "⏳", "#f59e0b"),
+      statCard("Tamamlanan İşler", done.length, "✅", "#22c55e"),
+      statCard("Bu Ayki Tahmini Gelir", formatMoney(monthRevenue), "💰", "#a855f7"),
+    );
+    container.appendChild(stats);
+
+    // İki kolon: yaklaşan randevular + son müşteriler
+    const cols = el("div", { class: "dash-cols" });
+
+    const upBox = el("div", { class: "panel" }, [
+      el("div", { class: "panel-head" }, [el("h2", { text: "Yaklaşan Randevular" })]),
+    ]);
+    if (upcoming.length === 0) {
+      upBox.appendChild(el("p", { class: "empty", text: "Yaklaşan randevu yok." }));
+    } else {
+      const list = el("div", { class: "up-list" });
+      upcoming.forEach((a) => {
+        const s = Constants.statusMeta(a.status);
+        const item = el("div", { class: "up-item", style: `--card-color:${s.color}`, onClick: () => Appointments.openDetail(a.id) }, [
+          el("div", { class: "up-date" }, [
+            el("span", { class: "up-day", text: Utils.formatDateShort(a.date) }),
+            el("span", { class: "up-time", text: a.time || "" }),
+          ]),
+          el("div", { class: "up-info" }, [
+            el("div", { class: "up-name", text: a.customerName || "(isimsiz)" }),
+            el("div", { class: "up-sub", text: a.service || "" }),
+          ]),
+          el("span", { class: "badge", style: `background:${s.color}22;color:${s.color}`, text: s.label }),
+        ]);
+        list.appendChild(item);
+      });
+      upBox.appendChild(list);
+    }
+
+    const custBox = el("div", { class: "panel" }, [
+      el("div", { class: "panel-head" }, [el("h2", { text: "Son Eklenen Müşteriler" })]),
+    ]);
+    if (recentCustomers.length === 0) {
+      custBox.appendChild(el("p", { class: "empty", text: "Henüz müşteri yok." }));
+    } else {
+      const list = el("div", { class: "up-list" });
+      recentCustomers.forEach((c) => {
+        list.appendChild(
+          el("div", { class: "up-item", onClick: () => Customers.openProfile(c.id) }, [
+            el("div", { class: "avatar", text: initials(c.name) }),
+            el("div", { class: "up-info" }, [
+              el("div", { class: "up-name", text: c.name || "(isimsiz)" }),
+              el("div", { class: "up-sub", text: c.company || c.phone || "" }),
+            ]),
+          ])
+        );
+      });
+      custBox.appendChild(list);
+    }
+
+    cols.append(upBox, custBox);
+    container.appendChild(cols);
+  }
+
+  function statCard(label, value, icon, color) {
+    return el("div", { class: "stat-card", style: `--stat-color:${color}` }, [
+      el("div", { class: "stat-icon", text: icon }),
+      el("div", {}, [
+        el("div", { class: "stat-value", text: String(value) }),
+        el("div", { class: "stat-label", text: label }),
+      ]),
+    ]);
+  }
+
+  function initials(name) {
+    if (!name) return "?";
+    return name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  }
+
+  function appointmentDateTime(a) {
+    return new Date(`${a.date}T${a.time || "00:00"}`);
+  }
+
+  return { render };
+})();
+
+window.Dashboard = Dashboard;
