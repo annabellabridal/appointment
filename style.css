@@ -751,7 +751,7 @@ textarea { resize: vertical; }
   isolation: isolate;
 }
 .lp-bg {
-  position: absolute;
+  position: fixed;
   inset: 0;
   width: 100%;
   height: 100%;
@@ -761,7 +761,7 @@ textarea { resize: vertical; }
 }
 .landing::before {
   content: "";
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: -1;
   background:
