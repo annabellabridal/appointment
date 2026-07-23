@@ -574,12 +574,18 @@ textarea { resize: vertical; }
 .filter-bar { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
 .filter-row { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(170px, 0.8fr) minmax(220px, 1fr) auto; gap: 10px; align-items: stretch; }
 .filter-row select, .filter-row input { min-width: 0; width: 100%; }
-.filter-date-range { min-width: 0; }
+.filter-date-range {
+  min-width: 0;
+  height: 100%;
+  display: flex;
+}
 .filter-date-range .modern-picker-trigger {
-  min-height: 36px;
+  height: 100%;
+  min-height: 0;
   padding: 4px 10px;
   grid-template-columns: 24px 1fr auto;
   gap: 8px;
+  flex: 1;
 }
 .filter-date-range .modern-picker-icon { width: 24px; height: 24px; }
 .filter-date-range .modern-picker-icon svg { width: 14px; height: 14px; stroke-width: 2; }
