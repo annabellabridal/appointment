@@ -6,6 +6,11 @@
 
 const Records = (() => {
   const { el, debounce, formatMoney, icon, toast } = Utils;
+  const MONTHS = [
+    "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
+  ];
+  const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 
   const EXPORT_COLUMNS = [
     ["Randevu Tarihi", (a) => a.date || ""],
@@ -22,7 +27,8 @@ const Records = (() => {
 
   const filters = {
     q: "",
-    date: "",
+    dateFrom: "",
+    dateTo: "",
     status: "",
     service: "",
     customerId: "",
@@ -93,8 +99,7 @@ const Records = (() => {
     const q = el("input", { type: "search", placeholder: "Ara: müşteri, telefon, hizmet, not...", value: filters.q, class: "filter-search" });
     q.addEventListener("input", debounce((e) => { filters.q = e.target.value; draw(); }, 200));
 
-    const date = el("input", { type: "date", value: filters.date });
-    date.addEventListener("change", (e) => { filters.date = e.target.value; draw(); });
+    const dateRange = createDateRangeFilter();
 
     const status = select(filters.status, [{ value: "", label: "Tüm Durumlar" }, ...Constants.STATUSES], (v) => { filters.status = v; draw(); });
     const customer = select(String(filters.customerId), [{ value: "", label: "Tüm Müşteriler" }, ...customers.map((c) => ({ value: String(c.id), label: c.name }))], (v) => { filters.customerId = v; draw(); });
@@ -107,8 +112,162 @@ const Records = (() => {
 
     return el("div", { class: "filter-bar" }, [
       q,
-      el("div", { class: "filter-row" }, [date, status, customer, clear]),
+      el("div", { class: "filter-row" }, [dateRange, status, customer, clear]),
     ]);
+  }
+
+  function createDateRangeFilter() {
+    let isOpen = false;
+    let from = filters.dateFrom || "";
+    let to = filters.dateTo || "";
+    let selectingEnd = Boolean(from && !to);
+    let viewDate = Utils.parseDate(from || to) || new Date();
+    viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+
+    const primary = el("span", { class: "modern-picker-value" });
+    const secondary = el("span", { class: "modern-picker-meta" });
+    const trigger = el("button", {
+      type: "button",
+      class: "modern-picker-trigger filter-date-trigger",
+      "aria-label": "Tarih aralığı seç",
+      "aria-haspopup": "dialog",
+      "aria-expanded": "false",
+    }, [
+      el("span", { class: "modern-picker-icon", html: icon("calendar", 20) }),
+      el("span", { class: "modern-picker-text" }, [primary, secondary]),
+      el("span", { class: "modern-picker-chevron", html: "&#8964;" }),
+    ]);
+    const panel = el("div", { class: "picker-popover picker-popover-date filter-date-popover", role: "dialog", "aria-label": "Tarih aralığı" });
+    const root = el("div", { class: "modern-picker filter-date-range" }, [trigger, panel]);
+
+    function rangeLabel() {
+      if (from && to && from === to) return [Utils.formatDateShort(from), "Tek gün"];
+      if (from && to) return [`${Utils.formatDateShort(from)} - ${Utils.formatDateShort(to)}`, "Tarih aralığı"];
+      if (from) return [`${Utils.formatDateShort(from)} sonrası`, "Başlangıç seçildi"];
+      if (to) return [`${Utils.formatDateShort(to)} öncesi`, "Bitiş seçildi"];
+      return ["Tarih aralığı", "Randevu tarihine göre filtrele"];
+    }
+
+    function syncTrigger() {
+      const [main, meta] = rangeLabel();
+      primary.textContent = main;
+      secondary.textContent = meta;
+    }
+
+    function applyRange(nextFrom = from, nextTo = to) {
+      filters.dateFrom = nextFrom || "";
+      filters.dateTo = nextTo || "";
+      close();
+      draw();
+    }
+
+    function choose(date) {
+      const value = Utils.toDateStr(date);
+      if (!from || (from && to) || !selectingEnd) {
+        from = value;
+        to = "";
+        selectingEnd = true;
+      } else if (value < from) {
+        to = from;
+        from = value;
+        selectingEnd = false;
+      } else {
+        to = value;
+        selectingEnd = false;
+      }
+      syncTrigger();
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      const today = new Date();
+      const previous = el("button", { type: "button", class: "picker-nav-btn", "aria-label": "Önceki ay", html: "&#8592;" });
+      const next = el("button", { type: "button", class: "picker-nav-btn", "aria-label": "Sonraki ay", html: "&#8594;" });
+      previous.addEventListener("click", () => {
+        viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1);
+        renderCalendar();
+      });
+      next.addEventListener("click", () => {
+        viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1);
+        renderCalendar();
+      });
+
+      const grid = el("div", { class: "picker-date-grid" });
+      const firstDay = (viewDate.getDay() + 6) % 7;
+      const gridStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1 - firstDay);
+      for (let index = 0; index < 42; index += 1) {
+        const date = new Date(gridStart);
+        date.setDate(gridStart.getDate() + index);
+        const value = Utils.toDateStr(date);
+        const isMuted = date.getMonth() !== viewDate.getMonth();
+        const isEndpoint = value === from || value === to;
+        const isInRange = from && to && value > from && value < to;
+        const day = el("button", {
+          type: "button",
+          class: `picker-day${isMuted ? " is-muted" : ""}${isEndpoint ? " is-selected" : ""}${isInRange ? " is-in-range" : ""}${Utils.sameDay(date, today) ? " is-today" : ""}`,
+          text: String(date.getDate()),
+          "aria-label": Utils.formatDate(value),
+          "aria-pressed": isEndpoint ? "true" : "false",
+        });
+        day.addEventListener("click", () => choose(date));
+        grid.appendChild(day);
+      }
+
+      const clear = el("button", { type: "button", class: "picker-clear-btn", text: "Temizle" });
+      clear.addEventListener("click", () => applyRange("", ""));
+      const todayButton = el("button", { type: "button", class: "picker-today-btn", text: "Bugün" });
+      todayButton.addEventListener("click", () => {
+        const value = Utils.toDateStr(new Date());
+        applyRange(value, value);
+      });
+      const apply = el("button", { type: "button", class: "picker-time-confirm", text: "Uygula" });
+      apply.addEventListener("click", () => applyRange(from, to || from));
+
+      panel.replaceChildren(
+        el("div", { class: "picker-date-head" }, [
+          el("div", {}, [
+            el("span", { class: "picker-eyebrow", text: selectingEnd ? "Bitiş" : "Başlangıç" }),
+            el("div", { class: "picker-month-title", text: `${MONTHS[viewDate.getMonth()]} ${viewDate.getFullYear()}` }),
+          ]),
+          el("div", { class: "picker-nav" }, [previous, next]),
+        ]),
+        el("div", { class: "picker-range-summary" }, [
+          el("span", { text: from ? Utils.formatDateShort(from) : "Başlangıç" }),
+          el("span", { text: to ? Utils.formatDateShort(to) : "Bitiş" }),
+        ]),
+        el("div", { class: "picker-weekdays" }, DAYS.map((day) => el("span", { text: day }))),
+        grid,
+        el("div", { class: "picker-footer picker-footer-split" }, [clear, todayButton, apply])
+      );
+    }
+
+    function close() {
+      isOpen = false;
+      root.classList.remove("is-open");
+      panel.classList.remove("is-open");
+      trigger.setAttribute("aria-expanded", "false");
+      document.removeEventListener("pointerdown", onOutside);
+    }
+
+    function onOutside(event) {
+      if (!root.contains(event.target)) close();
+    }
+
+    trigger.addEventListener("click", () => {
+      isOpen = !isOpen;
+      root.classList.toggle("is-open", isOpen);
+      panel.classList.toggle("is-open", isOpen);
+      trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      if (isOpen) {
+        document.addEventListener("pointerdown", onOutside);
+      } else {
+        document.removeEventListener("pointerdown", onOutside);
+      }
+    });
+
+    syncTrigger();
+    renderCalendar();
+    return root;
   }
 
   function select(value, options, onChange) {
@@ -121,7 +280,8 @@ const Records = (() => {
   function applyFilters() {
     const q = filters.q.trim().toLowerCase();
     return appointments.filter((a) => {
-      if (filters.date && a.date !== filters.date) return false;
+      if (filters.dateFrom && (!a.date || a.date < filters.dateFrom)) return false;
+      if (filters.dateTo && (!a.date || a.date > filters.dateTo)) return false;
       if (filters.status && a.status !== filters.status) return false;
       if (filters.service && a.service !== filters.service) return false;
       if (filters.customerId && String(a.customerId) !== String(filters.customerId)) return false;
@@ -136,6 +296,16 @@ const Records = (() => {
 
   function rowItem(a) {
     const s = Constants.statusMeta(a.status);
+    const statusSelect = select(a.status, Constants.STATUSES, (v) => updateStatus(a, v));
+    statusSelect.className = "record-status-select";
+    statusSelect.addEventListener("click", (event) => event.stopPropagation());
+
+    const meta = [
+      a.service,
+      a.weddingDate ? `Düğün: ${Utils.formatDateShort(a.weddingDate)}` : "",
+      a.address,
+    ].filter(Boolean);
+
     return el("div", { class: "record-row", style: `--card-color:${s.color}`, onClick: () => Appointments.openDetail(a.id) }, [
       el("div", { class: "record-date" }, [
         el("span", { class: "record-day", text: Utils.formatDateShort(a.date) }),
@@ -143,12 +313,29 @@ const Records = (() => {
       ].filter(Boolean)),
       el("div", { class: "record-main" }, [
         el("div", { class: "record-name", text: a.customerName || "(isimsiz)" }),
-        el("div", { class: "record-sub", text: [a.phone, a.email].filter(Boolean).join(" · ") }),
+        el("div", { class: "record-sub", text: [a.phone, a.email].filter(Boolean).join(" · ") || "İletişim bilgisi yok" }),
+        meta.length ? el("div", { class: "record-meta" }, meta.map((item) => el("span", { class: "record-meta-chip", text: item }))) : null,
       ]),
       el("div", { class: "record-badges" }, [
-        el("span", { class: "badge", style: `background:${s.color}22;color:${s.color}`, text: s.label }),
+        statusSelect,
       ]),
     ]);
+  }
+
+  async function updateStatus(appt, status) {
+    if (!status || status === appt.status) return;
+    const updated = { ...appt, status, updatedAt: new Date().toISOString() };
+    try {
+      await DB.appointments.put(updated);
+      appointments = appointments.map((item) => item.id === appt.id ? updated : item);
+      toast("Durum güncellendi", "success");
+      draw();
+      document.dispatchEvent(new CustomEvent("data:changed", { detail: { type: "appointments" } }));
+    } catch (error) {
+      console.error(error);
+      toast("Durum güncellenemedi", "error");
+      draw();
+    }
   }
 
   function sortedFiltered() {
