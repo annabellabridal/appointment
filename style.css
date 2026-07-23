@@ -47,18 +47,22 @@
   border-color: #ffe033 !important;
 }
 [data-theme="dark"] .sidebar-item.active {
-  border-left-color: var(--neon) !important;
+  border-left-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+[data-theme="dark"] .nav-item:hover {
   color: var(--neon) !important;
+  background: var(--neon-soft) !important;
 }
 [data-theme="dark"] .appt-card-body .appt-card-colored-bar {
-  background: var(--neon) !important;
+  background: var(--accent) !important;
 }
 [data-theme="dark"] .filter-bar .select-wrap select:focus {
   border-color: var(--neon);
   box-shadow: 0 0 0 3px var(--neon-soft);
 }
-[data-theme="dark"] .page-head h1 { color: var(--neon); }
-[data-theme="dark"] a { color: var(--neon); }
+[data-theme="dark"] a { color: var(--accent); }
+[data-theme="dark"] a:hover { color: var(--neon); }
 
 /* Açık tema — nötr gri tonları */
 [data-theme="light"] {
