@@ -10,7 +10,7 @@ const Settings = (() => {
   async function render(container) {
     const [theme, services, defaultFee, notifEnabled, autoBackup] = await Promise.all([
       DB.settings.get("theme", "dark"),
-      Appointments.defaultServices(),
+      DB.settings.get("services", []),
       DB.settings.get("defaultFee", 0),
       DB.settings.get("notifications", true),
       DB.settings.get("autoBackup", false),
