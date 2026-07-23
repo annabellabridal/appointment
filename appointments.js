@@ -373,6 +373,10 @@ const Appointments = (() => {
         el("span", { class: "field-label", text: "Saat" }),
         timeInput,
       ]),
+      el("div", { class: "field wedding-date-col" }, [
+        el("span", { class: "field-label", text: "Düğün Tarihi" }),
+        weddingDateInput,
+      ]),
     ]);
 
     const nameInput = el("input", { type: "text", name: "customerName", value: appt.customerName, placeholder: "Müşteri adı" });
@@ -442,7 +446,6 @@ const Appointments = (() => {
       field("Müşteri Adı", nameInput),
       field("Telefon", phoneInput),
       field("E-posta", emailInput),
-      field("Düğün Tarihi", weddingDateInput),
       field("Adres", addressInput, true),
       field("Hizmet Türü", serviceSelect),
       field("Durum", statusSelect),

@@ -295,14 +295,20 @@ textarea { resize: vertical; }
 }
 
 /* ---------- Forms ---------- */
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; row-gap: 16px; }
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field-full { grid-column: 1 / -1; }
 .field-label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
 
-.date-time-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 0.72fr); gap: 14px; align-items: end; }
-.date-col, .time-col { min-width: 0; }
-.time-col .modern-picker-trigger { min-height: 58px; }
+.date-time-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 0.72fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: end;
+  padding-bottom: 2px;
+}
+.date-col, .time-col, .wedding-date-col { min-width: 0; }
+.date-time-row .modern-picker-trigger { min-height: 62px; }
 
 .modern-picker { position: relative; min-width: 0; width: 100%; }
 .modern-picker-trigger {
@@ -441,7 +447,7 @@ textarea { resize: vertical; }
   transition: transform var(--trans);
 }
 .modal-overlay.show .modal { transform: none; }
-.modal-wide { max-width: 720px; }
+.modal-wide { max-width: 920px; }
 .modal-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 20px; border-bottom: 1px solid var(--border);
@@ -674,7 +680,8 @@ textarea { resize: vertical; }
 @media (max-width: 900px) {
   .dash-cols, .stats-grid { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
-  .date-time-row { grid-template-columns: 1fr; }
+  .date-time-row { grid-template-columns: 1fr 1fr; }
+  .wedding-date-col { grid-column: 1 / -1; }
   .mini-stats { grid-template-columns: repeat(2, 1fr); }
   .todo-board { grid-template-columns: 1fr; }
   .week-grid { grid-template-columns: 1fr; }
@@ -696,6 +703,8 @@ textarea { resize: vertical; }
   .income-head span:nth-child(3) { display: none; }
   .month-cell { min-height: 64px; }
   .mini-card .mini-name { display: none; }
+  .date-time-row { grid-template-columns: 1fr; }
+  .wedding-date-col { grid-column: auto; }
   .picker-popover {
     left: 12px !important; right: 12px; top: auto !important; bottom: 12px;
     width: auto; max-height: calc(100vh - 24px); overflow-y: auto;
