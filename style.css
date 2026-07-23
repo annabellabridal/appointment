@@ -575,9 +575,17 @@ textarea { resize: vertical; }
 .filter-row { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(170px, 0.8fr) minmax(220px, 1fr) auto; gap: 10px; align-items: stretch; }
 .filter-row select, .filter-row input { min-width: 0; width: 100%; }
 .filter-date-range { min-width: 0; }
-.filter-date-trigger { min-height: 46px; padding: 6px 10px; grid-template-columns: 32px 1fr auto; }
-.filter-date-trigger .modern-picker-icon { width: 32px; height: 32px; }
-.filter-date-trigger .modern-picker-value { font-size: 14px; }
+.filter-date-range .modern-picker-trigger {
+  min-height: 36px;
+  padding: 4px 10px;
+  grid-template-columns: 24px 1fr auto;
+  gap: 8px;
+}
+.filter-date-range .modern-picker-icon { width: 24px; height: 24px; }
+.filter-date-range .modern-picker-icon svg { width: 14px; height: 14px; stroke-width: 2; }
+.filter-date-range .modern-picker-value { font-size: 14px; line-height: 1.1; }
+.filter-date-range .modern-picker-meta { font-size: 10px; line-height: 1.1; }
+.filter-date-range .modern-picker-chevron { font-size: 16px; transform: translateY(0); }
 .filter-date-popover {
   position: absolute; left: 0; top: calc(100% + 8px); width: min(330px, calc(100vw - 32px));
 }
