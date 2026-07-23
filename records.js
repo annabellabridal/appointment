@@ -314,8 +314,8 @@ const Records = (() => {
       el("div", { class: "record-main" }, [
         el("div", { class: "record-name", text: a.customerName || "(isimsiz)" }),
         el("div", { class: "record-sub", text: [a.phone, a.email].filter(Boolean).join(" · ") || "İletişim bilgisi yok" }),
-        meta.length ? el("div", { class: "record-meta" }, meta.map((item) => el("span", { class: "record-meta-chip", text: item }))) : null,
       ]),
+      meta.length ? el("div", { class: "record-meta" }, meta.map((item) => el("span", { class: "record-meta-chip", text: item }))) : null,
       el("div", { class: "record-badges" }, [
         statusSelect,
       ]),

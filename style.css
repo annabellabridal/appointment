@@ -583,31 +583,31 @@ textarea { resize: vertical; }
 }
 .records-list { display: flex; flex-direction: column; gap: 8px; }
 .record-row {
-  display: grid; grid-template-columns: 120px minmax(0, 1fr) 150px; align-items: center; gap: 18px;
+  display: grid; grid-template-columns: 112px minmax(0, 1.1fr) minmax(220px, 0.9fr) 156px; align-items: center; gap: 12px;
   background: var(--surface); border: 1px solid var(--border);
   border-left: 3px solid var(--card-color, var(--accent));
   border-radius: 0; padding: 14px 16px; cursor: pointer;
   transition: background var(--trans), border-color var(--trans);
 }
 .record-row:hover { background: var(--surface-2); border-color: color-mix(in srgb, var(--border) 72%, var(--accent) 28%); }
-.record-date { display: flex; flex-direction: column; gap: 4px; }
-.record-day { font-weight: 800; font-size: 14px; display: block; font-variant-numeric: tabular-nums; }
-.record-time { font-size: 13px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-.record-main { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
-.record-name { font-weight: 750; font-size: 15px; }
-.record-sub { font-size: 12px; color: var(--text-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.record-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.record-date { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.record-day { font-weight: 800; font-size: 13px; display: block; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.record-time { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.record-main { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.record-name { font-weight: 750; font-size: 14px; line-height: 1.15; }
+.record-sub { font-size: 12px; color: var(--text-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; line-height: 1.2; }
+.record-meta { display: flex; flex-wrap: wrap; align-content: center; gap: 6px; min-width: 0; }
 .record-meta-chip {
-  max-width: 220px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
   padding: 3px 8px; color: var(--text-muted); background: var(--surface-2);
-  border: 1px solid var(--border); font-size: 11px; font-weight: 650;
+  border: 1px solid var(--border); font-size: 11px; font-weight: 650; line-height: 1.1;
 }
 .record-money { font-weight: 700; }
 .record-badges { display: flex; justify-content: flex-end; }
 .record-status-select {
-  width: 100%; min-width: 130px; height: 38px; padding: 0 34px 0 12px;
+  width: 100%; min-width: 130px; height: 36px; padding: 0 32px 0 12px;
   color: var(--text); background: var(--surface-2); border: 1px solid var(--border);
-  border-radius: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  border-radius: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
 }
 .record-status-select:hover, .record-status-select:focus {
   border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
@@ -730,8 +730,9 @@ textarea { resize: vertical; }
   .content { padding: 16px; }
   .filter-row { grid-template-columns: 1fr; }
   .filter-date-popover { position: fixed; }
-  .record-row { grid-template-columns: 1fr; gap: 10px; }
+  .record-row { grid-template-columns: 1fr; gap: 8px; padding: 12px 12px; }
   .record-date { flex-direction: row; align-items: baseline; gap: 10px; }
+  .record-meta { order: 3; }
   .record-badges { justify-content: flex-start; }
   .record-status-select { max-width: 220px; }
   .record-money { grid-column: auto; }
