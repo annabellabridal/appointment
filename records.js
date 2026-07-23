@@ -5,12 +5,13 @@
  */
 
 const Records = (() => {
-  const { el, debounce, formatMoney, icon, toast } = Utils;
+  const { el, debounce, formatMoney, icon, toast, confirmDialog } = Utils;
   const MONTHS = [
     "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
     "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
   ];
   const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+  const PAGE_SIZE = 20;
 
   const EXPORT_COLUMNS = [
     ["Randevu Tarihi", (a) => a.date || ""],
@@ -38,12 +39,16 @@ const Records = (() => {
   let appointments = [];
   let customers = [];
   let currentServiceFilter = "";
+  let currentPage = 1;
+  let selectedIds = new Set();
 
   async function render(container, preset = {}) {
     containerRef = container;
     Object.keys(filters).forEach((k) => (filters[k] = ""));
     Object.assign(filters, preset);
     currentServiceFilter = preset.service || "";
+    currentPage = 1;
+    selectedIds = new Set();
     [appointments, customers] = await Promise.all([
       DB.appointments.all(),
       DB.customers.all(),
@@ -59,6 +64,15 @@ const Records = (() => {
     const pageTitle = isProva ? "Prova Randevuları" : "Randevular";
     const btnLabel = isProva ? "Yeni Prova" : "Yeni Randevu";
     const btnService = isProva ? "Prova Randevusu" : "Randevu";
+    selectedIds = new Set([...selectedIds].filter((id) => filtered.some((a) => String(a.id) === String(id))));
+    const ordered = [...filtered].sort((a, b) =>
+      `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`));
+    const totalPages = Math.max(1, Math.ceil(ordered.length / PAGE_SIZE));
+    currentPage = Math.min(Math.max(currentPage, 1), totalPages);
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const pageItems = ordered.slice(start, start + PAGE_SIZE);
+    const selectedOnPage = pageItems.filter((a) => selectedIds.has(String(a.id))).length;
+    const selectedCount = selectedIds.size;
 
     container.appendChild(
       el("div", { class: "page-head" }, [
@@ -82,17 +96,26 @@ const Records = (() => {
     );
 
     container.appendChild(filterBar());
+    if (filtered.length) {
+      container.appendChild(batchBar({
+        totalPages,
+        pageItems,
+        selectedOnPage,
+        selectedCount,
+      }));
+    }
 
     const listWrap = el("div", { class: "records-list" });
 
     if (filtered.length === 0) {
       listWrap.appendChild(el("p", { class: "empty", text: "Kayıt bulunamadı." }));
     } else {
-      filtered
-        .sort((a, b) => `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`))
-        .forEach((a) => listWrap.appendChild(rowItem(a)));
+      pageItems.forEach((a) => listWrap.appendChild(rowItem(a)));
     }
     container.appendChild(listWrap);
+    if (filtered.length) {
+      container.appendChild(paginationBar({ totalPages, filteredCount: ordered.length }));
+    }
   }
 
   function filterBar() {
@@ -107,12 +130,76 @@ const Records = (() => {
     const clear = el("button", { class: "btn btn-secondary btn-sm", text: "Temizle", onClick: () => {
       Object.keys(filters).forEach((k) => (filters[k] = ""));
       if (currentServiceFilter) filters.service = currentServiceFilter;
+      currentPage = 1;
+      selectedIds.clear();
       draw();
     } });
 
     return el("div", { class: "filter-bar" }, [
       q,
       el("div", { class: "filter-row" }, [dateRange, status, customer, clear]),
+    ]);
+  }
+
+  function batchBar({ totalPages, pageItems, selectedOnPage, selectedCount }) {
+    const selectAll = el("input", { type: "checkbox", class: "batch-select-all" });
+    selectAll.checked = pageItems.length > 0 && selectedOnPage === pageItems.length;
+    selectAll.indeterminate = selectedOnPage > 0 && selectedOnPage < pageItems.length;
+    selectAll.addEventListener("click", (event) => event.stopPropagation());
+    selectAll.addEventListener("change", () => {
+      const pageIds = pageItems.map((a) => String(a.id));
+      if (selectAll.checked) {
+        pageIds.forEach((id) => selectedIds.add(id));
+      } else {
+        pageIds.forEach((id) => selectedIds.delete(id));
+      }
+      draw();
+    });
+
+    const pageLabel = `${currentPage} / ${totalPages}`;
+    const deleteBtn = el("button", {
+      class: "btn btn-danger btn-sm",
+      disabled: selectedCount ? null : "",
+      onClick: () => bulkDeleteSelected(),
+    }, [el("span", { class: "btn-ico", html: icon("trash", 16) }), "Seçilenleri Sil"]);
+
+    return el("div", { class: "records-batchbar" }, [
+      el("label", { class: "batch-select-wrap" }, [
+        selectAll,
+        el("span", { text: "Bu sayfa" }),
+      ]),
+      el("div", { class: "batch-meta" }, [
+        el("span", { class: "batch-count", text: selectedCount ? `${selectedCount} kayıt seçildi` : "Seçim yok" }),
+        el("span", { class: "batch-page", text: `Sayfa ${pageLabel}` }),
+      ]),
+      el("div", { class: "batch-actions" }, [
+        selectedCount ? el("button", {
+          class: "btn btn-secondary btn-sm",
+          onClick: () => { selectedIds.clear(); draw(); },
+        }, ["Seçimi Temizle"]) : null,
+        deleteBtn,
+      ].filter(Boolean)),
+    ]);
+  }
+
+  function paginationBar({ totalPages, filteredCount }) {
+    const prev = el("button", {
+      class: "icon-btn pager-btn",
+      disabled: currentPage <= 1 ? "" : null,
+      title: "Önceki sayfa",
+      html: "&#8592;",
+      onClick: () => { if (currentPage > 1) { currentPage -= 1; draw(); } },
+    });
+    const next = el("button", {
+      class: "icon-btn pager-btn",
+      disabled: currentPage >= totalPages ? "" : null,
+      title: "Sonraki sayfa",
+      html: "&#8594;",
+      onClick: () => { if (currentPage < totalPages) { currentPage += 1; draw(); } },
+    });
+    return el("div", { class: "records-pagination" }, [
+      el("span", { class: "pager-info", text: `${Math.min(currentPage * PAGE_SIZE, filteredCount)} / ${filteredCount}` }),
+      el("div", { class: "pager-controls" }, [prev, next]),
     ]);
   }
 
@@ -299,6 +386,16 @@ const Records = (() => {
     const statusSelect = select(a.status, Constants.STATUSES, (v) => updateStatus(a, v));
     statusSelect.className = "record-status-select";
     statusSelect.addEventListener("click", (event) => event.stopPropagation());
+    const checked = selectedIds.has(String(a.id));
+    const checkbox = el("input", { type: "checkbox", class: "record-select", checked: checked ? "" : null, "aria-label": "Randevuyu seç" });
+    checkbox.checked = checked;
+    checkbox.addEventListener("click", (event) => event.stopPropagation());
+    checkbox.addEventListener("change", () => {
+      const id = String(a.id);
+      if (checkbox.checked) selectedIds.add(id);
+      else selectedIds.delete(id);
+      draw();
+    });
 
     const meta = [
       a.service,
@@ -307,6 +404,7 @@ const Records = (() => {
     ].filter(Boolean);
 
     return el("div", { class: "record-row", style: `--card-color:${s.color}`, onClick: () => Appointments.openDetail(a.id) }, [
+      el("div", { class: "record-check" }, [checkbox]),
       el("div", { class: "record-date" }, [
         el("span", { class: "record-day", text: Utils.formatDateShort(a.date) }),
         a.time ? el("span", { class: "record-time", text: a.time }) : null,
@@ -319,6 +417,46 @@ const Records = (() => {
       el("div", { class: "record-badges" }, [
         statusSelect,
       ]),
+    ]);
+  }
+
+  async function bulkDeleteSelected() {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    const ok = await confirmDialog(
+      `${ids.length} kayıt ve bağlı dosyalar kalıcı olarak silinsin mi?`,
+      { title: "Toplu Sil", danger: true }
+    );
+    if (!ok) return;
+
+    let removed = 0;
+    try {
+      for (const id of ids) {
+        const files = await DB.files.byAppointment(id);
+        await Promise.all(files.map(async (f) => {
+          if (f.storagePath) await DB.files.deleteStorage(f.storagePath);
+          await DB.files.remove(f.id);
+        }));
+        await DB.appointments.remove(id);
+        removed += 1;
+      }
+      selectedIds.clear();
+      toast(`${removed} kayıt silindi`, "success");
+      document.dispatchEvent(new CustomEvent("data:changed", { detail: { type: "appointments" } }));
+      await refreshData();
+      draw();
+    } catch (error) {
+      console.error(error);
+      toast("Toplu silme tamamlanamadı", "error");
+      await refreshData();
+      draw();
+    }
+  }
+
+  async function refreshData() {
+    [appointments, customers] = await Promise.all([
+      DB.appointments.all(),
+      DB.customers.all(),
     ]);
   }
 

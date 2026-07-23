@@ -582,13 +582,44 @@ textarea { resize: vertical; }
   position: absolute; left: 0; top: calc(100% + 8px); width: min(330px, calc(100vw - 32px));
 }
 .records-list { display: flex; flex-direction: column; gap: 8px; }
+.records-batchbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 12px; background: var(--surface); border: 1px solid var(--border);
+}
+.batch-select-wrap {
+  display: inline-flex; align-items: center; gap: 10px; color: var(--text-muted);
+  font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.batch-select-all, .record-select {
+  width: 16px; height: 16px; accent-color: var(--accent);
+}
+.batch-meta {
+  display: flex; align-items: center; gap: 12px; color: var(--text-muted);
+  font-size: 12px; font-weight: 600;
+}
+.batch-count { color: var(--text); }
+.batch-actions { display: flex; align-items: center; gap: 8px; }
+.records-pagination {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 8px 2px 0; color: var(--text-muted); font-size: 12px; font-weight: 600;
+}
+.pager-controls { display: flex; align-items: center; gap: 8px; }
+.pager-btn {
+  width: 34px; height: 34px; display: grid; place-items: center;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 0;
+  color: var(--text); font-size: 16px;
+}
+.pager-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .record-row {
-  display: grid; grid-template-columns: 112px minmax(0, 1.1fr) minmax(220px, 0.9fr) 156px; align-items: center; gap: 12px;
+  display: grid; grid-template-columns: 28px 112px minmax(0, 1.1fr) minmax(220px, 0.9fr) 156px;
+  align-items: center; gap: 12px;
   background: var(--surface); border: 1px solid var(--border);
   border-left: 3px solid var(--card-color, var(--accent));
   border-radius: 0; padding: 14px 16px; cursor: pointer;
   transition: background var(--trans), border-color var(--trans);
 }
+.record-check { display: flex; align-items: center; justify-content: center; }
+.record-select { cursor: pointer; }
 .record-row:hover { background: var(--surface-2); border-color: color-mix(in srgb, var(--border) 72%, var(--accent) 28%); }
 .record-date { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .record-day { font-weight: 800; font-size: 13px; display: block; font-variant-numeric: tabular-nums; line-height: 1.1; }
@@ -714,6 +745,7 @@ textarea { resize: vertical; }
   .wedding-date-col { grid-column: 1 / -1; }
   .filter-row { grid-template-columns: 1fr 1fr; }
   .filter-row .btn { width: 100%; }
+  .records-batchbar { flex-wrap: wrap; }
   .mini-stats { grid-template-columns: repeat(2, 1fr); }
   .todo-board { grid-template-columns: 1fr; }
   .week-grid { grid-template-columns: 1fr; }
@@ -731,6 +763,7 @@ textarea { resize: vertical; }
   .filter-row { grid-template-columns: 1fr; }
   .filter-date-popover { position: fixed; }
   .record-row { grid-template-columns: 1fr; gap: 8px; padding: 12px 12px; }
+  .record-check { justify-content: flex-start; }
   .record-date { flex-direction: row; align-items: baseline; gap: 10px; }
   .record-meta { order: 3; }
   .record-badges { justify-content: flex-start; }
