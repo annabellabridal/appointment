@@ -38,6 +38,7 @@ const Records = (() => {
 
   async function render(container, preset = {}) {
     containerRef = container;
+    Object.keys(filters).forEach((k) => (filters[k] = ""));
     Object.assign(filters, preset);
     [appointments, customers] = await Promise.all([
       DB.appointments.all(),
