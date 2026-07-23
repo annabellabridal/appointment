@@ -8,7 +8,9 @@ const Records = (() => {
   const { el, debounce, formatMoney, icon, toast } = Utils;
 
   const EXPORT_COLUMNS = [
-    ["Tarih", (a) => a.date || ""],
+    ["Randevu Tarihi", (a) => a.date || ""],
+    ["Saat", (a) => a.time || ""],
+    ["Düğün Tarihi", (a) => a.weddingDate || ""],
     ["Müşteri", (a) => a.customerName || ""],
     ["Telefon", (a) => a.phone || ""],
     ["E-posta", (a) => a.email || ""],
@@ -124,7 +126,7 @@ const Records = (() => {
       if (filters.service && a.service !== filters.service) return false;
       if (filters.customerId && String(a.customerId) !== String(filters.customerId)) return false;
       if (q) {
-        const hay = [a.customerName, a.phone, a.email, a.service, a.notes, a.address]
+        const hay = [a.customerName, a.phone, a.email, a.service, a.notes, a.address, a.weddingDate]
           .filter(Boolean).join(" ").toLowerCase();
         if (!hay.includes(q)) return false;
       }

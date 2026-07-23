@@ -150,14 +150,28 @@ const Appointments = (() => {
     return { root, input, trigger, panel, primary, secondary, close, open, positionPanel, isOpen: () => isOpen };
   }
 
-  function createDatePicker(value) {
-    const picker = createPickerShell({ name: "date", value, type: "date", label: "Tarih seç" });
-    let selected = Utils.parseDate(value) || new Date();
-    let viewDate = new Date(selected.getFullYear(), selected.getMonth(), 1);
+  function createDatePicker(value, options = {}) {
+    const {
+      name = "date",
+      label = "Tarih seç",
+      emptyPrimary = "Tarih seç",
+      emptySecondary = "",
+      allowClear = false,
+    } = options;
+    const picker = createPickerShell({ name, value: value || "", type: "date", label });
+    let selected = Utils.parseDate(value);
+    let viewDate = selected
+      ? new Date(selected.getFullYear(), selected.getMonth(), 1)
+      : new Date();
 
     function updateTrigger() {
-      picker.primary.textContent = Utils.formatDateShort(picker.input.value);
-      picker.secondary.textContent = Utils.formatDate(picker.input.value);
+      if (picker.input.value) {
+        picker.primary.textContent = Utils.formatDateShort(picker.input.value);
+        picker.secondary.textContent = Utils.formatDate(picker.input.value);
+      } else {
+        picker.primary.textContent = emptyPrimary;
+        picker.secondary.textContent = emptySecondary;
+      }
     }
 
     function choose(date) {
@@ -193,7 +207,7 @@ const Appointments = (() => {
         const date = new Date(gridStart);
         date.setDate(gridStart.getDate() + index);
         const isMuted = date.getMonth() !== viewDate.getMonth();
-        const isSelected = Utils.sameDay(date, selected);
+        const isSelected = selected && Utils.sameDay(date, selected);
         const isToday = Utils.sameDay(date, today);
         const day = el("button", {
           type: "button",
@@ -208,6 +222,19 @@ const Appointments = (() => {
 
       const todayButton = el("button", { type: "button", class: "picker-today-btn", text: "Bugünü seç" });
       todayButton.addEventListener("click", () => choose(new Date()));
+      const footerActions = [todayButton];
+      if (allowClear) {
+        const clearButton = el("button", { type: "button", class: "picker-clear-btn", text: "Temizle" });
+        clearButton.addEventListener("click", () => {
+          selected = null;
+          picker.input.value = "";
+          picker.input.dispatchEvent(new Event("change", { bubbles: true }));
+          updateTrigger();
+          render();
+          picker.close();
+        });
+        footerActions.unshift(clearButton);
+      }
       picker.panel.replaceChildren(
         el("div", { class: "picker-date-head" }, [
           el("div", {}, [el("span", { class: "picker-eyebrow", text: "Tarih" }), headerTitle]),
@@ -215,7 +242,7 @@ const Appointments = (() => {
         ]),
         weekdays,
         grid,
-        el("div", { class: "picker-footer" }, [todayButton])
+        el("div", { class: "picker-footer" }, footerActions)
       );
       requestAnimationFrame(picker.positionPanel);
     }
@@ -307,6 +334,7 @@ const Appointments = (() => {
       customerName: "",
       phone: "",
       email: "",
+      weddingDate: "",
       address: "",
       service: prefill.service || "Randevu",
       status: "bekliyor",
@@ -328,10 +356,17 @@ const Appointments = (() => {
 
     const dateInput = createDatePicker(appt.date);
     const timeInput = createTimePicker(appt.time || "09:00");
+    const weddingDateInput = createDatePicker(appt.weddingDate, {
+      name: "weddingDate",
+      label: "Düğün tarihi seç",
+      emptyPrimary: "Düğün tarihi seç",
+      emptySecondary: "Müşteri düğün tarihi",
+      allowClear: true,
+    });
 
     const dateTimeRow = el("div", { class: "field-full date-time-row" }, [
       el("div", { class: "field date-col" }, [
-        el("span", { class: "field-label", text: "Düğün Tarihi" }),
+        el("span", { class: "field-label", text: "Randevu Tarihi" }),
         dateInput,
       ]),
       el("div", { class: "field time-col", id: "time-field" }, [
@@ -407,6 +442,7 @@ const Appointments = (() => {
       field("Müşteri Adı", nameInput),
       field("Telefon", phoneInput),
       field("E-posta", emailInput),
+      field("Düğün Tarihi", weddingDateInput),
       field("Adres", addressInput, true),
       field("Hizmet Türü", serviceSelect),
       field("Durum", statusSelect),
@@ -557,8 +593,9 @@ const Appointments = (() => {
         el("span", { class: "badge", style: `background:${s.color}22;color:${s.color}`, text: s.label }),
         appt.service ? el("span", { class: "badge", text: appt.service }) : null,
       ]),
-      row("Tarih", Utils.formatDate(appt.date)),
+      row("Randevu Tarihi", Utils.formatDate(appt.date)),
       appt.time ? row("Saat", appt.time) : null,
+      appt.weddingDate ? row("Düğün Tarihi", Utils.formatDate(appt.weddingDate)) : null,
       row("Müşteri", appt.customerName),
       row("Telefon", appt.phone),
       row("E-posta", appt.email),

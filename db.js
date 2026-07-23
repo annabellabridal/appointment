@@ -194,7 +194,7 @@ const DB = (() => {
       const { data, error } = await sb()
         .from(STORES.appointments)
         .select("id, data")
-        .or(`data->>customerName.ilike.${q},data->>phone.ilike.${q},data->>company.ilike.${q},data->>service.ilike.${q},data->>notes.ilike.${q},data->>project.ilike.${q}`)
+        .or(`data->>customerName.ilike.${q},data->>phone.ilike.${q},data->>company.ilike.${q},data->>service.ilike.${q},data->>notes.ilike.${q},data->>project.ilike.${q},data->>weddingDate.ilike.${q}`)
         .order("id", { ascending: true });
       check(error);
       return (data || []).map(rowToObj);
