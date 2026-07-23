@@ -178,7 +178,7 @@ const Calendar = (() => {
 
   function miniCard(a) {
     const s = Constants.statusMeta(a.status);
-    const label = a.service === "Prova Randevusu" && a.time
+    const label = a.time
       ? `${a.time} · ${a.customerName || "(isimsiz)"}`
       : a.customerName || "(isimsiz)";
     const node = el("div", {

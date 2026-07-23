@@ -329,13 +329,6 @@ const Appointments = (() => {
     const dateInput = createDatePicker(appt.date);
     const timeInput = createTimePicker(appt.time || "09:00");
 
-    function updateTimeVisibility() {
-      const isProva = serviceSelect.value === "Prova Randevusu";
-      const timeCol = dateTimeRow.querySelector(".time-col");
-      timeCol.style.display = isProva ? "" : "none";
-      if (!isProva) timeInput.querySelector("input[type=hidden]").value = "";
-    }
-
     const dateTimeRow = el("div", { class: "field-full date-time-row" }, [
       el("div", { class: "field date-col" }, [
         el("span", { class: "field-label", text: "Düğün Tarihi" }),
@@ -355,7 +348,6 @@ const Appointments = (() => {
     const serviceSelect = el("select", { name: "service" },
       Constants.SERVICE_TYPES.map((s) => el("option", { value: s.value, text: s.label })));
     serviceSelect.value = appt.service;
-    serviceSelect.addEventListener("change", updateTimeVisibility);
 
     const statusSelect = el("select", { name: "status" },
       Constants.STATUSES.map((s) => el("option", { value: s.value, text: s.label })));
@@ -423,8 +415,6 @@ const Appointments = (() => {
       el("div", { class: "field-full" }, [fileListBox]),
     );
 
-    updateTimeVisibility();
-
     const m = modal({
       title: existingId ? "Randevuyu Düzenle" : "Yeni Randevu",
       body: form,
@@ -442,7 +432,6 @@ const Appointments = (() => {
             if (!data.date) { toast("Tarih zorunlu", "error"); return; }
             if (!data.customerName) { toast("Müşteri adı girin", "error"); return; }
 
-            if (data.service !== "Prova Randevusu") delete data.time;
             data.updatedAt = new Date().toISOString();
 
             let apptId = existingId;
@@ -569,7 +558,7 @@ const Appointments = (() => {
         appt.service ? el("span", { class: "badge", text: appt.service }) : null,
       ]),
       row("Tarih", Utils.formatDate(appt.date)),
-      appt.service === "Prova Randevusu" && appt.time ? row("Saat", appt.time) : null,
+      appt.time ? row("Saat", appt.time) : null,
       row("Müşteri", appt.customerName),
       row("Telefon", appt.phone),
       row("E-posta", appt.email),
