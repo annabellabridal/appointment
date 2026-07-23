@@ -34,7 +34,7 @@ const Auth = (() => {
    * kullanıcı başarıyla giriş yapınca resolve olur.
    */
   function ensure() {
-    return new Promise(async (resolve) => {
+    return new Promise((resolve, reject) => {
       let missingConfig = false;
       try {
         sb();
@@ -43,17 +43,24 @@ const Auth = (() => {
       }
 
       if (!missingConfig) {
-        const session = await getSession();
-        if (session) return resolve(session);
+        getSession()
+          .then((session) => {
+            if (session) return resolve(session);
+            setupAuthListener(resolve);
+          })
+          .catch((err) => {
+            renderLogin(resolve, true);
+          });
+      } else {
+        renderLogin(resolve, missingConfig);
       }
+    });
+  }
 
-      renderLogin(resolve, missingConfig);
-
-      if (!missingConfig) {
-        sb().auth.onAuthStateChange((_event, session) => {
-          if (session) resolve(session);
-        });
-      }
+  function setupAuthListener(resolve) {
+    renderLogin(resolve, false);
+    sb().auth.onAuthStateChange((_event, session) => {
+      if (session) resolve(session);
     });
   }
 

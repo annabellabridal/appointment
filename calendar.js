@@ -17,8 +17,27 @@ const Calendar = (() => {
 
   async function render(container) {
     containerRef = container;
-    appointmentsCache = await DB.appointments.all();
+    await loadAppointments();
     draw();
+  }
+
+  async function loadAppointments() {
+    const d = state.cursor;
+    let from, to;
+    if (state.view === "month") {
+      const first = new Date(d.getFullYear(), d.getMonth(), 1);
+      const startIdx = Utils.weekdayIndex(first);
+      from = Utils.toDateStr(addDays(first, -startIdx - 1));
+      to = Utils.toDateStr(addDays(first, 42 + 1));
+    } else if (state.view === "week") {
+      const s = startOfWeek(d);
+      from = Utils.toDateStr(addDays(s, -1));
+      to = Utils.toDateStr(addDays(s, 8));
+    } else {
+      from = Utils.toDateStr(addDays(d, -1));
+      to = Utils.toDateStr(addDays(d, 1));
+    }
+    appointmentsCache = await DB.appointments.byDateRange(from, to);
   }
 
   function draw() {
@@ -36,7 +55,7 @@ const Calendar = (() => {
     const controls = el("div", { class: "cal-controls" }, [
       el("div", { class: "cal-nav" }, [
         el("button", { class: "icon-btn", html: "‹", title: "Önceki", onClick: () => shift(-1) }),
-        el("button", { class: "btn btn-secondary btn-sm", text: "Bugün", onClick: () => { state.cursor = new Date(); draw(); } }),
+        el("button", { class: "btn btn-secondary btn-sm", text: "Bugün", onClick: () => { state.cursor = new Date(); loadAppointments().then(draw); } }),
         el("button", { class: "icon-btn", html: "›", title: "Sonraki", onClick: () => shift(1) }),
       ]),
       el("div", { class: "seg" }, [
@@ -60,7 +79,7 @@ const Calendar = (() => {
     return el("button", {
       class: `seg-btn ${state.view === view ? "active" : ""}`,
       text: label,
-      onClick: () => { state.view = view; draw(); },
+      onClick: () => { state.view = view; loadAppointments().then(draw); },
     });
   }
 
@@ -80,7 +99,7 @@ const Calendar = (() => {
     if (state.view === "month") state.cursor = new Date(d.getFullYear(), d.getMonth() + dir, 1);
     else if (state.view === "week") state.cursor = addDays(d, 7 * dir);
     else state.cursor = addDays(d, dir);
-    draw();
+    loadAppointments().then(draw);
   }
 
   function apptsOn(dateStr) {
@@ -197,7 +216,7 @@ const Calendar = (() => {
       appt.updatedAt = new Date().toISOString();
       await DB.appointments.put(appt);
       Utils.toast(`Randevu ${Utils.formatDateShort(dateStr)} tarihine taşındı`, "success");
-      appointmentsCache = await DB.appointments.all();
+      await loadAppointments();
       draw();
     });
   }

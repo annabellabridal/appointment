@@ -5,15 +5,16 @@
  */
 
 const Reminders = (() => {
-  const LEAD_MINUTES = 30;      // kaç dakika önce hatırlatılsın
-  const CHECK_INTERVAL = 60000; // her dakika kontrol et
+  const LEAD_MINUTES = 30;
+  const CHECK_INTERVAL = 60000;
   const notified = new Set();
 
   let timer = null;
+  let notificationsEnabled = null;
 
   async function start() {
-    const enabled = await DB.settings.get("notifications", true);
-    if (enabled && "Notification" in window && Notification.permission === "default") {
+    notificationsEnabled = await DB.settings.get("notifications", true);
+    if (notificationsEnabled && "Notification" in window && Notification.permission === "default") {
       await Utils.requestNotificationPermission();
     }
     stop();
@@ -27,12 +28,14 @@ const Reminders = (() => {
   }
 
   async function check() {
-    const enabled = await DB.settings.get("notifications", true);
-    if (!enabled) return;
+    if (notificationsEnabled === null) {
+      notificationsEnabled = await DB.settings.get("notifications", true);
+    }
+    if (!notificationsEnabled) return;
     if (!("Notification" in window) || Notification.permission !== "granted") return;
 
     const now = new Date();
-    const appointments = await DB.appointments.all();
+    const appointments = await DB.appointments.today();
 
     appointments.forEach((a) => {
       if (a.status === "iptal" || a.status === "tamamlandi") return;

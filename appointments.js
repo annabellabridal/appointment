@@ -386,8 +386,7 @@ const Appointments = (() => {
 
     async function addPickedFiles(list) {
       for (const f of list) {
-        const dataUrl = await fileToDataURL(f);
-        pendingFiles.push({ name: f.name, type: f.type, size: f.size, dataUrl });
+        pendingFiles.push({ file: f, name: f.name, type: f.type, size: f.size });
       }
       renderPending();
     }
@@ -408,6 +407,8 @@ const Appointments = (() => {
       });
     }
     async function removeExisting(id) {
+      const file = existingFiles.find((f) => f.id === id);
+      if (file?.storagePath) await DB.files.deleteStorage(file.storagePath);
       await DB.files.remove(id);
       existingFiles = existingFiles.filter((f) => f.id !== id);
       renderPending();
@@ -497,9 +498,17 @@ const Appointments = (() => {
               apptId = await DB.appointments.add(data);
             }
 
-            // dosyaları kaydet
+            // dosyaları Storage'a yükle ve kaydet
             for (const f of pendingFiles) {
-              await DB.files.add({ ...f, appointmentId: apptId });
+              const { path, url } = await DB.files.upload(f.file);
+              await DB.files.add({
+                name: f.name,
+                type: f.type,
+                size: f.size,
+                storagePath: path,
+                url,
+                appointmentId: apptId,
+              });
             }
 
             toast("Randevu kaydedildi", "success");
@@ -546,7 +555,10 @@ const Appointments = (() => {
     const ok = await confirmDialog("Bu randevu silinsin mi?", { title: "Randevu Sil", danger: true });
     if (!ok) return false;
     const files = await DB.files.byAppointment(id);
-    await Promise.all(files.map((f) => DB.files.remove(f.id)));
+    await Promise.all(files.map(async (f) => {
+      if (f.storagePath) await DB.files.deleteStorage(f.storagePath);
+      await DB.files.remove(f.id);
+    }));
     await DB.appointments.remove(id);
     toast("Randevu silindi", "success");
     document.dispatchEvent(new CustomEvent("data:changed", { detail: { type: "appointments" } }));
@@ -628,13 +640,14 @@ const Appointments = (() => {
       const fl = el("div", { class: "detail-files" });
       fl.appendChild(el("div", { class: "detail-label", text: "Dosyalar" }));
       files.forEach((f) => {
+        const fileUrl = f.url || f.dataUrl;
         const isImg = (f.type || "").startsWith("image/");
         if (isImg) {
-          fl.appendChild(el("a", { href: f.dataUrl, target: "_blank", rel: "noopener" }, [
-            el("img", { src: f.dataUrl, class: "thumb", alt: f.name }),
+          fl.appendChild(el("a", { href: fileUrl, target: "_blank", rel: "noopener" }, [
+            el("img", { src: fileUrl, class: "thumb", alt: f.name }),
           ]));
         } else {
-          fl.appendChild(el("a", { class: "file-chip", href: f.dataUrl, download: f.name, text: `${f.name} · ${humanSize(f.size)}` }));
+          fl.appendChild(el("a", { class: "file-chip", href: fileUrl, download: f.name, text: `${f.name} · ${humanSize(f.size)}` }));
         }
       });
       wrap.appendChild(fl);

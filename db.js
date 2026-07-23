@@ -149,6 +149,16 @@ const DB = (() => {
     add: (c) => add(STORES.customers, c),
     put: (c) => put(STORES.customers, c),
     remove: (id) => remove(STORES.customers, id),
+    search: async (query) => {
+      const q = `%${query}%`;
+      const { data, error } = await sb()
+        .from(STORES.customers)
+        .select("id, data")
+        .or(`data->>name.ilike.${q},data->>phone.ilike.${q},data->>company.ilike.${q},data->>email.ilike.${q}`)
+        .order("id", { ascending: true });
+      check(error);
+      return (data || []).map(rowToObj);
+    },
   };
 
   const appointments = {
@@ -159,6 +169,45 @@ const DB = (() => {
     remove: (id) => remove(STORES.appointments, id),
     byCustomer: (customerId) =>
       getAllByIndex(STORES.appointments, "customerId", customerId),
+    today: async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data, error } = await sb()
+        .from(STORES.appointments)
+        .select("id, data")
+        .eq("data->>date", today)
+        .order("id", { ascending: true });
+      check(error);
+      return (data || []).map(rowToObj);
+    },
+    byDateRange: async (from, to) => {
+      const { data, error } = await sb()
+        .from(STORES.appointments)
+        .select("id, data")
+        .gte("data->>date", from)
+        .lte("data->>date", to)
+        .order("id", { ascending: true });
+      check(error);
+      return (data || []).map(rowToObj);
+    },
+    search: async (query) => {
+      const q = `%${query}%`;
+      const { data, error } = await sb()
+        .from(STORES.appointments)
+        .select("id, data")
+        .or(`data->>customerName.ilike.${q},data->>phone.ilike.${q},data->>company.ilike.${q},data->>service.ilike.${q},data->>notes.ilike.${q},data->>project.ilike.${q}`)
+        .order("id", { ascending: true });
+      check(error);
+      return (data || []).map(rowToObj);
+    },
+    getRange: async (from, count) => {
+      const { data, error } = await sb()
+        .from(STORES.appointments)
+        .select("id, data", { count: "exact" })
+        .range(from, from + count - 1)
+        .order("id", { ascending: true });
+      check(error);
+      return { items: (data || []).map(rowToObj), total: data?.length ?? 0 };
+    },
   };
 
   const todos = {
@@ -175,6 +224,8 @@ const DB = (() => {
     remove: (id) => remove(STORES.files, id),
     byAppointment: (appointmentId) =>
       getAllByIndex(STORES.files, "appointmentId", appointmentId),
+    upload: uploadFile,
+    deleteStorage: deleteFile,
   };
 
   const settings = {
@@ -225,6 +276,33 @@ const DB = (() => {
 
   const DB_VERSION = 2;
 
+  const BUCKET = "appointment-files";
+
+  async function ensureBucket() {
+    const { data: buckets } = await sb().storage.listBuckets();
+    const exists = buckets?.some((b) => b.name === BUCKET);
+    if (!exists) {
+      await sb().storage.createBucket(BUCKET, { public: true });
+    }
+  }
+
+  async function uploadFile(file) {
+    await ensureBucket();
+    const path = `${await currentUserId()}/${Date.now()}_${file.name}`;
+    const { error } = await sb().storage.from(BUCKET).upload(path, file, {
+      contentType: file.type,
+      upsert: false,
+    });
+    check(error);
+    const { data: urlData } = sb().storage.from(BUCKET).getPublicUrl(path);
+    return { path, url: urlData.publicUrl };
+  }
+
+  async function deleteFile(path) {
+    if (!path) return;
+    await sb().storage.from(BUCKET).remove([path]);
+  }
+
   async function exportAll() {
     const [c, a, t, f, s] = await Promise.all([
       getAll(STORES.customers),
@@ -245,7 +323,10 @@ const DB = (() => {
 
   async function importAll(data, { replace = true } = {}) {
     if (!data || typeof data !== "object") throw new Error("Geçersiz yedek dosyası");
+
+    let backup = null;
     if (replace) {
+      backup = await exportAll();
       await Promise.all([
         clear(STORES.customers),
         clear(STORES.appointments),
@@ -254,12 +335,44 @@ const DB = (() => {
         clear(STORES.settings),
       ]);
     }
+
+    try {
+      const jobs = [];
+      (data.customers || []).forEach((x) => jobs.push(put(STORES.customers, x)));
+      (data.appointments || []).forEach((x) => jobs.push(put(STORES.appointments, x)));
+      (data.todos || []).forEach((x) => jobs.push(put(STORES.todos, x)));
+      (data.files || []).forEach((x) => jobs.push(put(STORES.files, x)));
+      (data.settings || []).forEach((x) => jobs.push(settings.set(x.key, x.value)));
+
+      const results = await Promise.allSettled(jobs);
+      const failures = results.filter((r) => r.status === "rejected");
+      if (failures.length > 0) {
+        const errMsg = failures.map((f) => f.reason?.message || f.reason).join("; ");
+        if (backup) await restoreFromBackup(backup);
+        throw new Error(`İçe aktarma başarısız (${failures.length} kayıt): ${errMsg}`);
+      }
+    } catch (err) {
+      if (backup && !err.message.includes("İçe aktarma başarısız")) {
+        await restoreFromBackup(backup);
+      }
+      throw err;
+    }
+  }
+
+  async function restoreFromBackup(backup) {
+    await Promise.all([
+      clear(STORES.customers),
+      clear(STORES.appointments),
+      clear(STORES.todos),
+      clear(STORES.files),
+      clear(STORES.settings),
+    ]);
     const jobs = [];
-    (data.customers || []).forEach((x) => jobs.push(put(STORES.customers, x)));
-    (data.appointments || []).forEach((x) => jobs.push(put(STORES.appointments, x)));
-    (data.todos || []).forEach((x) => jobs.push(put(STORES.todos, x)));
-    (data.files || []).forEach((x) => jobs.push(put(STORES.files, x)));
-    (data.settings || []).forEach((x) => jobs.push(settings.set(x.key, x.value)));
+    (backup.customers || []).forEach((x) => jobs.push(put(STORES.customers, x)));
+    (backup.appointments || []).forEach((x) => jobs.push(put(STORES.appointments, x)));
+    (backup.todos || []).forEach((x) => jobs.push(put(STORES.todos, x)));
+    (backup.files || []).forEach((x) => jobs.push(put(STORES.files, x)));
+    (backup.settings || []).forEach((x) => jobs.push(settings.set(x.key, x.value)));
     await Promise.all(jobs);
   }
 

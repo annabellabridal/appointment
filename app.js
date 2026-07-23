@@ -141,16 +141,12 @@ const App = (() => {
 
   // Global arama -------------------------------------------------------------
   async function globalSearch(q) {
-    q = (q || "").trim().toLowerCase();
+    q = (q || "").trim();
     if (q.length < 2) return;
-    const [appointments, customers] = await Promise.all([DB.appointments.all(), DB.customers.all()]);
-
-    const matchAppts = appointments.filter((a) =>
-      [a.customerName, a.phone, a.company, a.service, a.notes, a.project]
-        .filter(Boolean).join(" ").toLowerCase().includes(q)).slice(0, 20);
-    const matchCust = customers.filter((c) =>
-      [c.name, c.phone, c.company, c.email, c.notes]
-        .filter(Boolean).join(" ").toLowerCase().includes(q)).slice(0, 20);
+    const [matchAppts, matchCust] = await Promise.all([
+      DB.appointments.search(q),
+      DB.customers.search(q),
+    ]);
 
     const wrap = el("div", { class: "search-results" });
     if (matchCust.length) {

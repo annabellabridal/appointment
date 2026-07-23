@@ -7,26 +7,30 @@ const Dashboard = (() => {
   const { el, formatMoney, formatDate } = Utils;
 
   async function render(container) {
-    const [appointments, customers] = await Promise.all([
+    const today = Utils.todayStr();
+    const now = new Date();
+    const monthStart = today.slice(0, 7) + "-01";
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+    const monthEnd = Utils.toDateStr(nextMonth);
+
+    const [todayAppts, rangeAppts, allAppts, customers] = await Promise.all([
+      DB.appointments.today(),
+      DB.appointments.byDateRange(today, monthEnd),
       DB.appointments.all(),
       DB.customers.all(),
     ]);
 
-    const today = Utils.todayStr();
-    const now = new Date();
-
-    const todays = appointments.filter((a) => a.date === today);
-    const upcoming = appointments
+    const todays = todayAppts;
+    const upcoming = rangeAppts
       .filter((a) => a.status !== "iptal" && a.status !== "tamamlandi" && appointmentDateTime(a) >= now)
       .sort((a, b) => appointmentDateTime(a) - appointmentDateTime(b))
       .slice(0, 6);
-    const pending = appointments.filter((a) => a.status === "bekliyor");
-    const done = appointments.filter((a) => a.status === "tamamlandi");
+    const pending = allAppts.filter((a) => a.status === "bekliyor");
+    const done = allAppts.filter((a) => a.status === "tamamlandi");
 
-    // Bu ayki tahmini gelir (bu ay içindeki randevuların ücret toplamı, iptal hariç)
     const ym = today.slice(0, 7);
-    const monthRevenue = appointments
-      .filter((a) => (a.date || "").slice(0, 7) === ym && a.status !== "iptal")
+    const monthRevenue = rangeAppts
+      .filter((a) => a.status !== "iptal")
       .reduce((sum, a) => sum + (Number(a.fee) || 0), 0);
 
     const recentCustomers = [...customers]
