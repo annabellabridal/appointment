@@ -300,6 +300,13 @@ textarea { resize: vertical; }
 .field-full { grid-column: 1 / -1; }
 .field-label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
 
+.date-time-row { display: flex; gap: 12px; align-items: flex-end; }
+.date-col { flex: 2; }
+.time-col { flex: 1; }
+.time-col .modern-picker-trigger { min-height: 46px; padding: 6px 10px; }
+.time-col .modern-picker-trigger .modern-picker-icon { display: none; }
+.time-col .modern-picker-trigger .modern-picker-value { font-size: 14px; }
+
 .modern-picker { position: relative; min-width: 0; }
 .modern-picker-trigger {
   width: 100%; min-height: 58px; padding: 8px 12px;
@@ -670,6 +677,7 @@ textarea { resize: vertical; }
 @media (max-width: 900px) {
   .dash-cols, .stats-grid { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
+  .date-time-row { flex-direction: column; }
   .mini-stats { grid-template-columns: repeat(2, 1fr); }
   .todo-board { grid-template-columns: 1fr; }
   .week-grid { grid-template-columns: 1fr; }

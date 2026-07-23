@@ -328,16 +328,24 @@ const Appointments = (() => {
 
     const dateInput = createDatePicker(appt.date);
     const timeInput = createTimePicker(appt.time || "09:00");
-    const timeWrap = el("div", { class: "field", id: "time-field" }, [
-      el("span", { class: "field-label", text: "Saat" }),
-      timeInput,
-    ]);
 
     function updateTimeVisibility() {
       const isProva = serviceSelect.value === "Prova Randevusu";
-      timeWrap.style.display = isProva ? "" : "none";
+      const timeCol = dateTimeRow.querySelector(".time-col");
+      timeCol.style.display = isProva ? "" : "none";
       if (!isProva) timeInput.querySelector("input[type=hidden]").value = "";
     }
+
+    const dateTimeRow = el("div", { class: "field-full date-time-row" }, [
+      el("div", { class: "field date-col" }, [
+        el("span", { class: "field-label", text: "Düğün Tarihi" }),
+        dateInput,
+      ]),
+      el("div", { class: "field time-col", id: "time-field" }, [
+        el("span", { class: "field-label", text: "Saat" }),
+        timeInput,
+      ]),
+    ]);
 
     const nameInput = el("input", { type: "text", name: "customerName", value: appt.customerName, placeholder: "Müşteri adı" });
     const phoneInput = el("input", { type: "tel", name: "phone", value: appt.phone, placeholder: "05xx xxx xx xx" });
@@ -403,8 +411,7 @@ const Appointments = (() => {
       onChange: (e) => addPickedFiles(e.target.files) });
 
     form.append(
-      field("Düğün Tarihi", dateInput),
-      el("div", { class: "field-full", id: "time-field-container" }, [timeWrap]),
+      dateTimeRow,
       field("Müşteri Adı", nameInput),
       field("Telefon", phoneInput),
       field("E-posta", emailInput),
