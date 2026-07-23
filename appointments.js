@@ -549,6 +549,42 @@ const Appointments = (() => {
     return true;
   }
 
+  function customerKey(data = {}) {
+    const name = String(data.customerName || data.name || "").trim().toLowerCase();
+    const contact = String(data.phone || data.email || "").trim().toLowerCase();
+    return { name, contact };
+  }
+
+  async function cleanupOrphanCustomer(appt) {
+    const target = customerKey(appt);
+    if (!target.name) return false;
+
+    const [allAppointments, allCustomers] = await Promise.all([
+      DB.appointments.all(),
+      DB.customers.all(),
+    ]);
+
+    const stillReferenced = allAppointments.some((item) => {
+      const key = customerKey(item);
+      if (!key.name || key.name !== target.name) return false;
+      if (!target.contact) return true;
+      return key.contact === target.contact;
+    });
+    if (stillReferenced) return false;
+
+    const customer = allCustomers.find((item) => {
+      const key = customerKey(item);
+      if (!key.name || key.name !== target.name) return false;
+      if (!target.contact) return true;
+      return key.contact === target.contact;
+    });
+
+    if (!customer) return false;
+    await DB.customers.remove(customer.id);
+    document.dispatchEvent(new CustomEvent("data:changed", { detail: { type: "customers" } }));
+    return true;
+  }
+
   // Randevu kartı (liste/takvim için)
   function card(appt, { compact = false } = {}) {
     const s = Constants.statusMeta(appt.status);
@@ -636,7 +672,7 @@ const Appointments = (() => {
     });
   }
 
-  return { openForm, openDetail, remove, card };
+  return { openForm, openDetail, remove, card, cleanupOrphanCustomer };
 })();
 
 window.Appointments = Appointments;

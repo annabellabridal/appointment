@@ -42,6 +42,21 @@ const Records = (() => {
   let currentPage = 1;
   let selectedIds = new Set();
 
+  function activeCustomerOptions() {
+    const map = new Map();
+    appointments.forEach((appt) => {
+      const name = String(appt.customerName || "").trim();
+      if (!name) return;
+      const meta = [appt.phone, appt.email].filter(Boolean).join(" · ");
+      if (!map.has(name)) {
+        map.set(name, { value: name, label: name, meta });
+      } else if (!map.get(name).meta && meta) {
+        map.get(name).meta = meta;
+      }
+    });
+    return [{ value: "", label: "Tüm Müşteriler" }, ...[...map.values()].sort((a, b) => a.label.localeCompare(b.label, "tr"))];
+  }
+
   async function render(container, preset = {}) {
     containerRef = container;
     Object.keys(filters).forEach((k) => (filters[k] = ""));
@@ -59,6 +74,10 @@ const Records = (() => {
   function draw() {
     const container = containerRef;
     container.innerHTML = "";
+    const customerNames = new Set(appointments.map((a) => String(a.customerName || "").trim()).filter(Boolean));
+    if (filters.customerId && !customerNames.has(String(filters.customerId))) {
+      filters.customerId = "";
+    }
     const filtered = applyFilters();
     const isProva = filters.service === "Prova Randevusu";
     const pageTitle = isProva ? "Prova Randevuları" : "Randevular";
@@ -186,7 +205,6 @@ const Records = (() => {
     let isOpen = false;
     let query = "";
     let searchInput = null;
-    const allOptions = [{ value: "", label: "Tüm Müşteriler" }, ...customers.map((c) => ({ value: String(c.id), label: c.name || "(isimsiz)", meta: c.phone || c.email || "" }))];
 
     const primary = el("span", { class: "modern-picker-value" });
     const secondary = el("span", { class: "modern-picker-meta" });
@@ -205,6 +223,7 @@ const Records = (() => {
     const root = el("div", { class: "modern-picker filter-select-picker filter-customer-picker" }, [trigger, panel]);
 
     function syncTrigger() {
+      const allOptions = activeCustomerOptions();
       const selected = allOptions.find((o) => o.value === String(filters.customerId)) || allOptions[0];
       primary.textContent = selected.label;
       secondary.textContent = selected.meta || "Müşteri filtresi";
@@ -223,6 +242,7 @@ const Records = (() => {
     }
 
     function renderOptions() {
+      const allOptions = activeCustomerOptions();
       const term = query.trim().toLowerCase();
       const list = allOptions.filter((o) => {
         if (!term) return true;
@@ -497,7 +517,7 @@ const Records = (() => {
       if (filters.dateTo && (!a.date || a.date > filters.dateTo)) return false;
       if (filters.status && a.status !== filters.status) return false;
       if (filters.service && a.service !== filters.service) return false;
-      if (filters.customerId && String(a.customerId) !== String(filters.customerId)) return false;
+      if (filters.customerId && String(a.customerName || "").trim() !== String(filters.customerId)) return false;
       if (q) {
         const hay = [a.customerName, a.phone, a.email, a.service, a.notes, a.address, a.weddingDate]
           .filter(Boolean).join(" ").toLowerCase();
