@@ -303,7 +303,7 @@ const Appointments = (() => {
 
     let appt = {
       date: prefill.date || Utils.todayStr(),
-      customerId: prefill.customerId || "",
+      time: prefill.time || "",
       customerName: "",
       phone: "",
       email: "",
@@ -327,6 +327,17 @@ const Appointments = (() => {
       ]);
 
     const dateInput = createDatePicker(appt.date);
+    const timeInput = createTimePicker(appt.time || "09:00");
+    const timeWrap = el("div", { class: "field", id: "time-field" }, [
+      el("span", { class: "field-label", text: "Saat" }),
+      timeInput,
+    ]);
+
+    function updateTimeVisibility() {
+      const isProva = serviceSelect.value === "Prova Randevusu";
+      timeWrap.style.display = isProva ? "" : "none";
+      if (!isProva) timeInput.querySelector("input[type=hidden]").value = "";
+    }
 
     const nameInput = el("input", { type: "text", name: "customerName", value: appt.customerName, placeholder: "Müşteri adı" });
     const phoneInput = el("input", { type: "tel", name: "phone", value: appt.phone, placeholder: "05xx xxx xx xx" });
@@ -336,6 +347,7 @@ const Appointments = (() => {
     const serviceSelect = el("select", { name: "service" },
       Constants.SERVICE_TYPES.map((s) => el("option", { value: s.value, text: s.label })));
     serviceSelect.value = appt.service;
+    serviceSelect.addEventListener("change", updateTimeVisibility);
 
     const statusSelect = el("select", { name: "status" },
       Constants.STATUSES.map((s) => el("option", { value: s.value, text: s.label })));
@@ -390,27 +402,9 @@ const Appointments = (() => {
       accept: ".pdf,.jpg,.jpeg,.png,.docx,image/*,application/pdf",
       onChange: (e) => addPickedFiles(e.target.files) });
 
-    const customerSelect = el("select", { name: "customerId" }, [
-      el("option", { value: "", text: "— Yeni Müşteri —" }),
-      ...customers.map((c) =>
-        el("option", { value: String(c.id), text: `${c.name}${c.phone ? " · " + c.phone : ""}` })
-      ),
-    ]);
-    customerSelect.value = appt.customerId ? String(appt.customerId) : "";
-    customerSelect.addEventListener("change", () => {
-      const id = Number(customerSelect.value);
-      const c = customers.find((x) => x.id === id);
-      if (c) {
-        nameInput.value = c.name || "";
-        phoneInput.value = c.phone || "";
-        emailInput.value = c.email || "";
-        addressInput.value = c.address || "";
-      }
-    });
-
     form.append(
       field("Düğün Tarihi", dateInput),
-      field("Kayıtlı Müşteri", customerSelect, true),
+      el("div", { class: "field-full", id: "time-field-container" }, [timeWrap]),
       field("Müşteri Adı", nameInput),
       field("Telefon", phoneInput),
       field("E-posta", emailInput),
@@ -421,6 +415,8 @@ const Appointments = (() => {
       field("Dosya Ekle", fileInput, true),
       el("div", { class: "field-full" }, [fileListBox]),
     );
+
+    updateTimeVisibility();
 
     const m = modal({
       title: existingId ? "Randevuyu Düzenle" : "Yeni Randevu",
@@ -437,16 +433,9 @@ const Appointments = (() => {
           onClick: async ({ close }) => {
             const data = collect(form);
             if (!data.date) { toast("Tarih zorunlu", "error"); return; }
-            if (!data.customerName && !data.customerId) { toast("Müşteri adı girin veya kayıtlı müşteri seçin", "error"); return; }
+            if (!data.customerName) { toast("Müşteri adı girin", "error"); return; }
 
-            if (data.customerId) {
-              const c = customers.find((x) => x.id === Number(data.customerId));
-              if (c && !data.customerName) data.customerName = c.name;
-              data.customerId = Number(data.customerId);
-            } else {
-              data.customerId = await ensureCustomer(data, customers);
-            }
-
+            if (data.service !== "Prova Randevusu") delete data.time;
             data.updatedAt = new Date().toISOString();
 
             let apptId = existingId;
@@ -573,6 +562,7 @@ const Appointments = (() => {
         appt.service ? el("span", { class: "badge", text: appt.service }) : null,
       ]),
       row("Tarih", Utils.formatDate(appt.date)),
+      appt.service === "Prova Randevusu" && appt.time ? row("Saat", appt.time) : null,
       row("Müşteri", appt.customerName),
       row("Telefon", appt.phone),
       row("E-posta", appt.email),

@@ -7,6 +7,8 @@
   --accent: #e5e5e5;        /* açık gri (monokrom vurgu) */
   --accent-hover: #ffffff;
   --on-accent: #0a0a0a;     /* açık zemin üzerine koyu yazı */
+  --neon: #ffd600;          /* sarı neon — düşük kalite monitörler için */
+  --neon-soft: rgba(255, 214, 0, 0.15);
   --radius: 4px;
   --radius-sm: 3px;
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
@@ -27,6 +29,36 @@
   --text-muted: #8f8f8f;
   --glass: rgba(15, 15, 15, 0.82);
 }
+
+/* Düşük kalite monitörler için sarı neon vurguları (dark mode) */
+[data-theme="dark"] .field input:focus,
+[data-theme="dark"] .field textarea:focus,
+[data-theme="dark"] .field select:focus {
+  border-color: var(--neon) !important;
+  box-shadow: 0 0 0 3px var(--neon-soft) !important;
+}
+[data-theme="dark"] .btn-primary {
+  background: var(--neon) !important;
+  color: #0a0a0a !important;
+  border-color: var(--neon) !important;
+}
+[data-theme="dark"] .btn-primary:hover {
+  background: #ffe033 !important;
+  border-color: #ffe033 !important;
+}
+[data-theme="dark"] .sidebar-item.active {
+  border-left-color: var(--neon) !important;
+  color: var(--neon) !important;
+}
+[data-theme="dark"] .appt-card-body .appt-card-colored-bar {
+  background: var(--neon) !important;
+}
+[data-theme="dark"] .filter-bar .select-wrap select:focus {
+  border-color: var(--neon);
+  box-shadow: 0 0 0 3px var(--neon-soft);
+}
+[data-theme="dark"] .page-head h1 { color: var(--neon); }
+[data-theme="dark"] a { color: var(--neon); }
 
 /* Açık tema — nötr gri tonları */
 [data-theme="light"] {

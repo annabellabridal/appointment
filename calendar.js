@@ -178,14 +178,17 @@ const Calendar = (() => {
 
   function miniCard(a) {
     const s = Constants.statusMeta(a.status);
+    const label = a.service === "Prova Randevusu" && a.time
+      ? `${a.time} · ${a.customerName || "(isimsiz)"}`
+      : a.customerName || "(isimsiz)";
     const node = el("div", {
       class: "mini-card",
       draggable: "true",
       "data-id": a.id,
       style: `--card-color:${s.color}`,
-      title: `${a.customerName || ""}`,
+      title: label,
     }, [
-      el("span", { class: "mini-name", text: a.customerName || "(isimsiz)" }),
+      el("span", { class: "mini-name", text: label }),
     ]);
     node.addEventListener("dragstart", (e) => {
       e.dataTransfer.setData("text/plain", String(a.id));

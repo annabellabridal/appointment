@@ -137,7 +137,8 @@ const Records = (() => {
     return el("div", { class: "record-row", style: `--card-color:${s.color}`, onClick: () => Appointments.openDetail(a.id) }, [
       el("div", { class: "record-date" }, [
         el("span", { class: "record-day", text: Utils.formatDateShort(a.date) }),
-      ]),
+        a.service === "Prova Randevusu" && a.time ? el("span", { class: "record-time", text: a.time }) : null,
+      ].filter(Boolean)),
       el("div", { class: "record-main" }, [
         el("div", { class: "record-name", text: a.customerName || "(isimsiz)" }),
         el("div", { class: "record-sub", text: [a.phone, a.email].filter(Boolean).join(" · ") }),

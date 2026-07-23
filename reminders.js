@@ -40,13 +40,15 @@ const Reminders = (() => {
     appointments.forEach((a) => {
       if (a.status === "iptal" || a.status === "tamamlandi") return;
       if (!a.date) return;
-      const when = new Date(`${a.date}T09:00`);
+      const time = (a.service === "Prova Randevusu" && a.time) ? a.time : "09:00";
+      const when = new Date(`${a.date}T${time}`);
       const diffMin = (when - now) / 60000;
       if (diffMin > 0 && diffMin <= LEAD_MINUTES && !notified.has(a.id)) {
         notified.add(a.id);
         const mins = Math.round(diffMin);
+        const timeStr = (a.service === "Prova Randevusu" && a.time) ? ` saat ${a.time}` : "";
         Utils.notify("Yaklaşan Randevu", {
-          body: `${mins} dakika sonra ${a.customerName || "randevunuz"} ile ${a.service || "randevunuz"} var.`,
+          body: `${mins} dakika sonra ${a.customerName || "randevunuz"}${timeStr} — ${a.service || "randevunuz"}`,
           tag: `appt-${a.id}`,
         });
       }
