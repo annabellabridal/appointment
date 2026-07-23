@@ -125,7 +125,7 @@ const Records = (() => {
     const dateRange = createDateRangeFilter();
 
     const status = select(filters.status, [{ value: "", label: "Tüm Durumlar" }, ...Constants.STATUSES], (v) => { filters.status = v; draw(); });
-    const customer = select(String(filters.customerId), [{ value: "", label: "Tüm Müşteriler" }, ...customers.map((c) => ({ value: String(c.id), label: c.name }))], (v) => { filters.customerId = v; draw(); });
+    const customer = createCustomerFilter();
 
     const clear = el("button", { class: "btn btn-secondary btn-sm", text: "Temizle", onClick: () => {
       Object.keys(filters).forEach((k) => (filters[k] = ""));
@@ -180,6 +180,132 @@ const Records = (() => {
         deleteBtn,
       ].filter(Boolean)),
     ]);
+  }
+
+  function createCustomerFilter() {
+    let isOpen = false;
+    let query = "";
+    let searchInput = null;
+    const allOptions = [{ value: "", label: "Tüm Müşteriler" }, ...customers.map((c) => ({ value: String(c.id), label: c.name || "(isimsiz)", meta: c.phone || c.email || "" }))];
+
+    const primary = el("span", { class: "modern-picker-value" });
+    const secondary = el("span", { class: "modern-picker-meta" });
+    const trigger = el("button", {
+      type: "button",
+      class: "modern-picker-trigger filter-select-trigger filter-customer-trigger",
+      "aria-label": "Müşteri seç",
+      "aria-haspopup": "dialog",
+      "aria-expanded": "false",
+    }, [
+      el("span", { class: "modern-picker-icon", html: icon("users", 20) }),
+      el("span", { class: "modern-picker-text" }, [primary, secondary]),
+      el("span", { class: "modern-picker-chevron", html: "&#8964;" }),
+    ]);
+    const panel = el("div", { class: "picker-popover picker-popover-date filter-select-popover", role: "dialog", "aria-label": "Müşteri filtresi" });
+    const root = el("div", { class: "modern-picker filter-select-picker filter-customer-picker" }, [trigger, panel]);
+
+    function syncTrigger() {
+      const selected = allOptions.find((o) => o.value === String(filters.customerId)) || allOptions[0];
+      primary.textContent = selected.label;
+      secondary.textContent = selected.meta || "Müşteri filtresi";
+    }
+
+    function close() {
+      isOpen = false;
+      root.classList.remove("is-open");
+      panel.classList.remove("is-open");
+      trigger.setAttribute("aria-expanded", "false");
+      document.removeEventListener("pointerdown", onOutside);
+    }
+
+    function onOutside(event) {
+      if (!root.contains(event.target)) close();
+    }
+
+    function renderOptions() {
+      const term = query.trim().toLowerCase();
+      const list = allOptions.filter((o) => {
+        if (!term) return true;
+        return [o.label, o.meta].filter(Boolean).join(" ").toLowerCase().includes(term);
+      });
+      const search = el("input", { type: "search", class: "picker-search", placeholder: "Müşteri ara..." });
+      search.value = query;
+      searchInput = search;
+      const options = el("div", { class: "picker-options" });
+      list.forEach((option) => {
+        const active = String(filters.customerId) === option.value;
+        const item = el("button", {
+          type: "button",
+          class: `picker-option${active ? " is-selected" : ""}`,
+        }, [
+          el("span", { class: "picker-option-label", text: option.label }),
+          option.meta ? el("span", { class: "picker-option-meta", text: option.meta }) : null,
+        ].filter(Boolean));
+        item.addEventListener("click", () => {
+          filters.customerId = option.value;
+          currentPage = 1;
+          draw();
+        });
+        options.appendChild(item);
+      });
+      if (!list.length) {
+        options.appendChild(el("div", { class: "picker-empty", text: "Sonuç yok." }));
+      }
+      panel.replaceChildren(
+        el("div", { class: "picker-date-head" }, [
+          el("div", {}, [
+            el("span", { class: "picker-eyebrow", text: "Müşteri" }),
+            el("div", { class: "picker-month-title", text: "Filtrele" }),
+          ]),
+          el("button", { type: "button", class: "picker-nav-btn", html: "&#10005;", "aria-label": "Kapat" }),
+        ]),
+        search,
+        options,
+        el("div", { class: "picker-footer picker-footer-split" }, [
+          el("button", {
+            type: "button",
+            class: "picker-clear-btn",
+            text: "Temizle",
+            onClick: () => {
+              filters.customerId = "";
+              currentPage = 1;
+              close();
+              draw();
+            },
+          }),
+          el("button", {
+            type: "button",
+            class: "picker-time-confirm",
+            text: "Kapat",
+            onClick: () => close(),
+          }),
+        ])
+      );
+      const closeBtn = panel.querySelector(".picker-nav-btn");
+      closeBtn.addEventListener("click", close);
+      search.addEventListener("input", (e) => {
+        query = e.target.value;
+        renderOptions();
+      });
+    }
+
+    trigger.addEventListener("click", () => {
+      isOpen = !isOpen;
+      root.classList.toggle("is-open", isOpen);
+      panel.classList.toggle("is-open", isOpen);
+      trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      if (isOpen) {
+        query = "";
+        renderOptions();
+        requestAnimationFrame(() => searchInput?.focus());
+        document.addEventListener("pointerdown", onOutside);
+      } else {
+        document.removeEventListener("pointerdown", onOutside);
+      }
+    });
+
+    syncTrigger();
+    return root;
   }
 
   function paginationBar({ totalPages, filteredCount }) {

@@ -581,6 +581,32 @@ textarea { resize: vertical; }
 .filter-date-popover {
   position: absolute; left: 0; top: calc(100% + 8px); width: min(330px, calc(100vw - 32px));
 }
+.filter-select-popover {
+  position: absolute; left: 0; top: calc(100% + 8px); width: min(420px, calc(100vw - 32px));
+}
+.filter-select-picker .picker-search {
+  width: 100%; min-height: 40px; padding: 8px 10px; margin-bottom: 10px;
+  color: var(--text); background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 0; outline: none;
+}
+.picker-options {
+  max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
+  padding-right: 2px;
+}
+.picker-option {
+  width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+  padding: 10px 12px; text-align: left; color: var(--text); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 0; transition: background var(--trans), border-color var(--trans);
+}
+.picker-option:hover { background: color-mix(in srgb, var(--accent) 10%, var(--surface-2)); border-color: color-mix(in srgb, var(--accent) 28%, var(--border)); }
+.picker-option.is-selected { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.picker-option-label { font-size: 14px; font-weight: 700; line-height: 1.15; }
+.picker-option-meta { font-size: 11px; color: var(--text-muted); line-height: 1.15; }
+.picker-option.is-selected .picker-option-meta { color: color-mix(in srgb, var(--on-accent) 70%, transparent); }
+.picker-empty {
+  padding: 12px; color: var(--text-muted); font-size: 13px; text-align: center;
+  border: 1px dashed var(--border); background: var(--surface-2);
+}
 .records-list { display: flex; flex-direction: column; gap: 8px; }
 .records-batchbar {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -762,6 +788,7 @@ textarea { resize: vertical; }
   .content { padding: 16px; }
   .filter-row { grid-template-columns: 1fr; }
   .filter-date-popover { position: fixed; }
+  .filter-select-popover { position: fixed; }
   .record-row { grid-template-columns: 1fr; gap: 8px; padding: 12px 12px; }
   .record-check { justify-content: flex-start; }
   .record-date { flex-direction: row; align-items: baseline; gap: 10px; }
