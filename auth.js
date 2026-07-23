@@ -105,6 +105,29 @@ const Auth = (() => {
       message.className = "auth-message auth-info";
     }
 
+    const forgotBtn = el("button", {
+      type: "button", class: "auth-forgot",
+      text: "Şifremi unuttum",
+    });
+    forgotBtn.addEventListener("click", async () => {
+      const email = emailInput.value.trim();
+      if (!email) { showError("E-posta adresinizi girin."); return; }
+      forgotBtn.disabled = true;
+      forgotBtn.textContent = "Gönderiliyor…";
+      try {
+        const { error } = await sb().auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin,
+        });
+        if (error) throw error;
+        showInfo("Şifre sıfırlama bağlantısı e-postanıza gönderildi.");
+      } catch (err) {
+        showError(translateError(err.message || String(err)));
+      } finally {
+        forgotBtn.disabled = false;
+        forgotBtn.textContent = "Şifremi unuttum";
+      }
+    });
+
     const form = el("form", { class: "auth-form" }, [
       el("div", { class: "auth-brand" }, [
         el("span", { class: "auth-logo", html: Utils.icon("wave", 30) }),
@@ -113,6 +136,7 @@ const Auth = (() => {
       emailInput,
       passInput,
       submitBtn,
+      forgotBtn,
       message,
       toggleBtn,
     ]);

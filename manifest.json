@@ -1,7 +1,7 @@
 {
   "name": "Randevu & Müşteri Takip",
   "short_name": "Randevu",
-  "description": "Kişisel randevu ve müşteri takip uygulaması - tamamen offline",
+  "description": "Kişisel randevu ve müşteri takip uygulaması",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

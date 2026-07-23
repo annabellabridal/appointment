@@ -4,7 +4,7 @@
  */
 
 const Customers = (() => {
-  const { el, modal, toast, confirmDialog, formatMoney, escapeHtml } = Utils;
+  const { el, modal, toast, confirmDialog, formatMoney, escapeHtml, initials } = Utils;
 
   let containerRef = null;
 
@@ -210,11 +210,6 @@ const Customers = (() => {
       el("div", { class: "mini-stat-value", text: String(value) }),
       el("div", { class: "mini-stat-label", text: label }),
     ]);
-  }
-
-  function initials(name) {
-    if (!name) return "?";
-    return name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
   }
 
   return { render, openForm, openProfile };

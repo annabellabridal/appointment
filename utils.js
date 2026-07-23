@@ -512,12 +512,17 @@ const Utils = (() => {
     ]);
   }
 
+  function initials(name) {
+    if (!name) return "?";
+    return name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  }
+
   return {
     $, $$, el, escapeHtml,
     MONTHS_TR, DAYS_TR, pad,
     todayStr, toDateStr, parseDate, formatDate, formatDateShort,
     weekdayIndex, startOfWeek, addDays, sameDay,
-    formatMoney,
+    formatMoney, initials,
     toast, modal, confirmDialog,
     requestNotificationPermission, notify,
     fileToDataURL, humanSize, download, downloadBlob, debounce, uid,

@@ -384,8 +384,14 @@ const Appointments = (() => {
     const fileListBox = el("div", { class: "file-chips" });
     const pendingFiles = [];
 
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
     async function addPickedFiles(list) {
       for (const f of list) {
+        if (f.size > MAX_FILE_SIZE) {
+          toast(`${f.name} dosyası çok büyük (maks 5MB).`, "error");
+          continue;
+        }
         pendingFiles.push({ file: f, name: f.name, type: f.type, size: f.size });
       }
       renderPending();

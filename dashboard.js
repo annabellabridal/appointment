@@ -100,7 +100,7 @@ const Dashboard = (() => {
       recentCustomers.forEach((c) => {
         list.appendChild(
           el("div", { class: "up-item", onClick: () => Customers.openProfile(c.id) }, [
-            el("div", { class: "avatar", text: initials(c.name) }),
+            el("div", { class: "avatar", text: Utils.initials(c.name) }),
             el("div", { class: "up-info" }, [
               el("div", { class: "up-name", text: c.name || "(isimsiz)" }),
               el("div", { class: "up-sub", text: c.company || c.phone || "" }),
@@ -123,11 +123,6 @@ const Dashboard = (() => {
         el("div", { class: "stat-label", text: label }),
       ]),
     ]);
-  }
-
-  function initials(name) {
-    if (!name) return "?";
-    return name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
   }
 
   function appointmentDateTime(a) {

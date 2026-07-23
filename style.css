@@ -710,6 +710,16 @@ textarea { resize: vertical; }
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 .auth-submit { width: 100%; padding: 12px; font-size: 15px; }
+.auth-forgot {
+  background: none;
+  border: none;
+  color: var(--muted, #888);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px;
+  text-align: center;
+}
+.auth-forgot:hover { color: var(--accent); }
 .auth-toggle {
   background: none;
   border: none;
