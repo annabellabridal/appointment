@@ -105,7 +105,7 @@ const Calendar = (() => {
   function apptsOn(dateStr) {
     return appointmentsCache
       .filter((a) => a.date === dateStr)
-      .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+      .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
   }
 
   function drawMonth(body) {
@@ -183,9 +183,8 @@ const Calendar = (() => {
       draggable: "true",
       "data-id": a.id,
       style: `--card-color:${s.color}`,
-      title: `${a.time || ""} ${a.customerName || ""}`,
+      title: `${a.customerName || ""}`,
     }, [
-      el("span", { class: "mini-time", text: a.time || "" }),
       el("span", { class: "mini-name", text: a.customerName || "(isimsiz)" }),
     ]);
     node.addEventListener("dragstart", (e) => {

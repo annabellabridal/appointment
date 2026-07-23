@@ -39,8 +39,8 @@ const Reminders = (() => {
 
     appointments.forEach((a) => {
       if (a.status === "iptal" || a.status === "tamamlandi") return;
-      if (!a.date || !a.time) return;
-      const when = new Date(`${a.date}T${a.time}`);
+      if (!a.date) return;
+      const when = new Date(`${a.date}T09:00`);
       const diffMin = (when - now) / 60000;
       if (diffMin > 0 && diffMin <= LEAD_MINUTES && !notified.has(a.id)) {
         notified.add(a.id);

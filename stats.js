@@ -5,7 +5,7 @@
  */
 
 const Stats = (() => {
-  const { el, formatMoney, barChart, lineChart, MONTHS_TR } = Utils;
+  const { el, barChart, MONTHS_TR } = Utils;
 
   async function render(container) {
     const appointments = await DB.appointments.all();
@@ -17,21 +17,13 @@ const Stats = (() => {
       return;
     }
 
-    // Son 6 ay
     const months = lastMonths(6);
     const countByMonth = months.map((m) => appointments.filter((a) => (a.date || "").slice(0, 7) === m.key).length);
-    const revenueByMonth = months.map((m) =>
-      appointments
-        .filter((a) => (a.date || "").slice(0, 7) === m.key && a.status !== "iptal")
-        .reduce((s, a) => s + (Number(a.fee) || 0), 0)
-    );
 
-    // En çok hizmet
     const serviceCount = {};
     appointments.forEach((a) => { if (a.service) serviceCount[a.service] = (serviceCount[a.service] || 0) + 1; });
     const topServices = Object.entries(serviceCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
-    // En aktif müşteri
     const custCount = {};
     appointments.forEach((a) => { if (a.customerName) custCount[a.customerName] = (custCount[a.customerName] || 0) + 1; });
     const topCustomers = Object.entries(custCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
@@ -40,9 +32,6 @@ const Stats = (() => {
 
     grid.appendChild(chartCard("Aylık Randevu Sayısı", (canvas) =>
       barChart(canvas, months.map((m) => m.label), countByMonth)));
-
-    grid.appendChild(chartCard("Aylık Gelir (₺)", (canvas) =>
-      lineChart(canvas, months.map((m) => m.label), revenueByMonth, { color: "#cfcfcf" })));
 
     grid.appendChild(chartCard("En Çok Alınan Hizmet", (canvas) =>
       barChart(canvas, topServices.map((s) => shorten(s[0])), topServices.map((s) => s[1]), { color: "#cfcfcf" }),
@@ -54,7 +43,6 @@ const Stats = (() => {
 
     container.appendChild(grid);
 
-    // canvasları çiz (DOM'a eklendikten sonra)
     requestAnimationFrame(() => {
       pending.forEach(({ canvas, drawFn }) => drawFn(canvas));
       pending.length = 0;

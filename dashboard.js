@@ -27,11 +27,7 @@ const Dashboard = (() => {
       .slice(0, 6);
     const pending = allAppts.filter((a) => a.status === "bekliyor");
     const done = allAppts.filter((a) => a.status === "tamamlandi");
-
-    const ym = today.slice(0, 7);
-    const monthRevenue = rangeAppts
-      .filter((a) => a.status !== "iptal")
-      .reduce((sum, a) => sum + (Number(a.fee) || 0), 0);
+    const monthCount = rangeAppts.filter((a) => a.status !== "iptal").length;
 
     const recentCustomers = [...customers]
       .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
@@ -58,7 +54,7 @@ const Dashboard = (() => {
       statCard("Bugünkü Randevu", todays.length, "calendar"),
       statCard("Bekleyen İşler", pending.length, "clock"),
       statCard("Tamamlanan İşler", done.length, "check"),
-      statCard("Bu Ayki Tahmini Gelir", formatMoney(monthRevenue), "wallet"),
+      statCard("Bu Ayki Randevu", monthCount, "calendar"),
     );
     container.appendChild(stats);
 
@@ -77,7 +73,7 @@ const Dashboard = (() => {
         const item = el("div", { class: "up-item", style: `--card-color:${s.color}`, onClick: () => Appointments.openDetail(a.id) }, [
           el("div", { class: "up-date" }, [
             el("span", { class: "up-day", text: Utils.formatDateShort(a.date) }),
-            el("span", { class: "up-time", text: a.time || "" }),
+            el("span", { class: "up-time", text: a.service || "" }),
           ]),
           el("div", { class: "up-info" }, [
             el("div", { class: "up-name", text: a.customerName || "(isimsiz)" }),
@@ -126,7 +122,7 @@ const Dashboard = (() => {
   }
 
   function appointmentDateTime(a) {
-    return new Date(`${a.date}T${a.time || "00:00"}`);
+    return new Date(`${a.date}T00:00`);
   }
 
   return { render };

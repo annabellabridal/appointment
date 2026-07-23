@@ -31,26 +31,24 @@ const Customers = (() => {
     const totalsByCustomer = {};
     appointments.forEach((a) => {
       if (!a.customerId) return;
-      totalsByCustomer[a.customerId] = totalsByCustomer[a.customerId] || { count: 0, paid: 0 };
+      totalsByCustomer[a.customerId] = totalsByCustomer[a.customerId] || { count: 0 };
       totalsByCustomer[a.customerId].count += 1;
-      totalsByCustomer[a.customerId].paid += Number(a.paid) || 0;
     });
 
     const grid = el("div", { class: "cust-grid" });
     customers
       .sort((a, b) => (a.name || "").localeCompare(b.name || "", "tr"))
       .forEach((c) => {
-        const t = totalsByCustomer[c.id] || { count: 0, paid: 0 };
+        const t = totalsByCustomer[c.id] || { count: 0 };
         grid.appendChild(
           el("div", { class: "cust-card", onClick: () => openProfile(c.id) }, [
             el("div", { class: "avatar", text: initials(c.name) }),
             el("div", { class: "cust-info" }, [
               el("div", { class: "cust-name", text: c.name || "(isimsiz)" }),
-              el("div", { class: "cust-sub", text: c.company || c.phone || "" }),
+              el("div", { class: "cust-sub", text: c.phone || c.email || "" }),
             ]),
             el("div", { class: "cust-meta" }, [
               el("span", { class: "chip-count", text: `${t.count} randevu` }),
-              el("span", { class: "chip-money", text: formatMoney(t.paid) }),
             ]),
           ])
         );
@@ -124,10 +122,9 @@ const Customers = (() => {
     const c = await DB.customers.get(id);
     if (!c) return;
     const appts = (await DB.appointments.byCustomer(id))
-      .sort((a, b) => `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`));
+      .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
-    const totalFee = appts.reduce((s, a) => s + (Number(a.fee) || 0), 0);
-    const totalPaid = appts.reduce((s, a) => s + (Number(a.paid) || 0), 0);
+    const totalAppts = appts.length;
 
     const wrap = el("div", { class: "detail" });
     wrap.appendChild(el("div", { class: "profile-head" }, [
@@ -160,10 +157,7 @@ const Customers = (() => {
 
     // Toplamlar
     wrap.appendChild(el("div", { class: "mini-stats" }, [
-      miniStat("Randevu", appts.length),
-      miniStat("Toplam Ücret", formatMoney(totalFee)),
-      miniStat("Toplam Ödeme", formatMoney(totalPaid)),
-      miniStat("Kalan", formatMoney(totalFee - totalPaid)),
+      miniStat("Toplam Randevu", totalAppts),
     ]));
 
     // Geçmiş randevular / yapılan işler
@@ -177,11 +171,9 @@ const Customers = (() => {
         list.appendChild(el("div", { class: "up-item", style: `--card-color:${s.color}`, onClick: () => Appointments.openDetail(a.id) }, [
           el("div", { class: "up-date" }, [
             el("span", { class: "up-day", text: Utils.formatDateShort(a.date) }),
-            el("span", { class: "up-time", text: a.time || "" }),
           ]),
           el("div", { class: "up-info" }, [
-            el("div", { class: "up-name", text: a.service || a.project || "Randevu" }),
-            el("div", { class: "up-sub", text: formatMoney(a.fee) }),
+            el("div", { class: "up-name", text: a.service || "Randevu" }),
           ]),
           el("span", { class: "badge", style: `background:${s.color}22;color:${s.color}`, text: s.label }),
         ]));

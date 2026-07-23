@@ -10,7 +10,8 @@ const App = (() => {
   const ROUTES = {
     dashboard: { label: "Panel", icon: "home", render: (c) => Dashboard.render(c) },
     calendar: { label: "Takvim", icon: "calendar", render: (c) => Calendar.render(c) },
-    records: { label: "Randevular", icon: "list", render: (c) => Records.render(c) },
+    randevu: { label: "Randevu", icon: "list", render: (c) => Records.render(c, { service: "Randevu" }) },
+    prova: { label: "Prova", icon: "list", render: (c) => Records.render(c, { service: "Prova Randevusu" }) },
     customers: { label: "Müşteriler", icon: "users", render: (c) => Customers.render(c) },
     income: { label: "Gelir", icon: "wallet", render: (c) => Income.render(c) },
     todos: { label: "Yapılacaklar", icon: "check", render: (c) => Todos.render(c) },
@@ -71,7 +72,10 @@ const App = (() => {
     nav.appendChild(navList);
     nav.appendChild(el("button", {
       class: "btn btn-primary nav-new",
-      onClick: () => Appointments.openForm(),
+      onClick: () => {
+        const svc = current === "prova" ? "Prova Randevusu" : "Randevu";
+        Appointments.openForm(null, { service: svc });
+      },
     }, [el("span", { class: "btn-ico", html: Utils.icon("plus", 16) }), "Yeni Randevu"]));
 
     // Topbar
@@ -160,7 +164,7 @@ const App = (() => {
       wrap.appendChild(el("h4", { class: "section-title", text: `Randevular (${matchAppts.length})` }));
       matchAppts.forEach((a) => wrap.appendChild(el("div", { class: "search-item", onClick: () => { closeAll(); Appointments.openDetail(a.id); } }, [
         el("span", { class: "search-name", text: `${a.customerName || "(isimsiz)"} · ${a.service || ""}` }),
-        el("span", { class: "search-sub", text: `${Utils.formatDateShort(a.date)} ${a.time || ""}` }),
+        el("span", { class: "search-sub", text: Utils.formatDateShort(a.date) }),
       ])));
     }
     if (!matchAppts.length && !matchCust.length) {

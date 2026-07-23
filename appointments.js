@@ -12,6 +12,10 @@ const Constants = {
     { value: "tamamlandi", label: "Tamamlandı", color: "#f0f0f0" },
     { value: "iptal", label: "İptal", color: "#5a5a5a" },
   ],
+  SERVICE_TYPES: [
+    { value: "Randevu", label: "Randevu" },
+    { value: "Prova Randevusu", label: "Prova Randevusu" },
+  ],
   PRIORITIES: [
     { value: "dusuk", label: "Düşük", color: "#6a6a6a" },
     { value: "orta", label: "Orta", color: "#9a9a9a" },
@@ -292,34 +296,20 @@ const Appointments = (() => {
     return picker.root;
   }
 
-  async function defaultServices() {
-    return DB.settings.get("services", ["Toplantı", "Danışmanlık", "Kurulum", "Bakım", "Keşif"]);
-  }
-
   async function openForm(existingId = null, prefill = {}) {
-    const [customers, services, defaultFee] = await Promise.all([
+    const [customers] = await Promise.all([
       DB.customers.all(),
-      defaultServices(),
-      DB.settings.get("defaultFee", 0),
     ]);
 
     let appt = {
       date: prefill.date || Utils.todayStr(),
-      time: prefill.time || "09:00",
       customerId: prefill.customerId || "",
       customerName: "",
       phone: "",
       email: "",
-      company: "",
       address: "",
-      mapsUrl: "",
-      service: services[0] || "",
-      project: "",
-      fee: defaultFee || 0,
-      payment: "odenmedi",
-      paid: 0,
+      service: prefill.service || "Randevu",
       status: "bekliyor",
-      priority: "orta",
       notes: "",
     };
 
@@ -337,53 +327,25 @@ const Appointments = (() => {
       ]);
 
     const dateInput = createDatePicker(appt.date);
-    const timeInput = createTimePicker(appt.time);
-
-    // Müşteri seçici (mevcut veya yeni)
-    const customerSelect = el("select", { name: "customerId" }, [
-      el("option", { value: "", text: "— Yeni / Manuel —" }),
-      ...customers.map((c) =>
-        el("option", { value: String(c.id), text: `${c.name}${c.company ? " · " + c.company : ""}` })
-      ),
-    ]);
-    customerSelect.value = appt.customerId ? String(appt.customerId) : "";
 
     const nameInput = el("input", { type: "text", name: "customerName", value: appt.customerName, placeholder: "Müşteri adı" });
     const phoneInput = el("input", { type: "tel", name: "phone", value: appt.phone, placeholder: "05xx xxx xx xx" });
     const emailInput = el("input", { type: "email", name: "email", value: appt.email, placeholder: "ornek@mail.com" });
-    const companyInput = el("input", { type: "text", name: "company", value: appt.company, placeholder: "Firma" });
     const addressInput = el("input", { type: "text", name: "address", value: appt.address, placeholder: "Adres" });
-    const mapsInput = el("input", { type: "url", name: "mapsUrl", value: appt.mapsUrl, placeholder: "https://maps.google.com/..." });
 
-    const serviceInput = el("input", { type: "text", name: "service", value: appt.service, list: "service-list", placeholder: "Hizmet türü" });
-    const serviceList = el("datalist", { id: "service-list" }, services.map((s) => el("option", { value: s })));
-
-    const projectInput = el("input", { type: "text", name: "project", value: appt.project, placeholder: "Proje adı" });
-    const feeInput = el("input", { type: "number", name: "fee", value: appt.fee, min: "0", step: "0.01", placeholder: "0" });
-    const paidInput = el("input", { type: "number", name: "paid", value: appt.paid, min: "0", step: "0.01", placeholder: "0" });
-
-    const paymentSelect = el("select", { name: "payment" },
-      Constants.PAYMENT.map((p) => el("option", { value: p.value, text: p.label })));
-    paymentSelect.value = appt.payment;
+    const serviceSelect = el("select", { name: "service" },
+      Constants.SERVICE_TYPES.map((s) => el("option", { value: s.value, text: s.label })));
+    serviceSelect.value = appt.service;
 
     const statusSelect = el("select", { name: "status" },
       Constants.STATUSES.map((s) => el("option", { value: s.value, text: s.label })));
     statusSelect.value = appt.status;
 
-    const prioritySelect = el("select", { name: "priority" },
-      Constants.PRIORITIES.map((p) => el("option", { value: p.value, text: p.label })));
-    prioritySelect.value = appt.priority;
-
     const notesInput = el("textarea", { name: "notes", rows: "3", placeholder: "Notlar..." });
     notesInput.value = appt.notes || "";
 
-    // Dosya ekleme
-    const fileInput = el("input", { type: "file", name: "files", multiple: true,
-      accept: ".pdf,.jpg,.jpeg,.png,.docx,image/*,application/pdf" });
-    const photoInput = el("input", { type: "file", name: "photos", multiple: true, accept: "image/*", capture: "environment" });
     const fileListBox = el("div", { class: "file-chips" });
     const pendingFiles = [];
-
     const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
     async function addPickedFiles(list) {
@@ -396,10 +358,7 @@ const Appointments = (() => {
       }
       renderPending();
     }
-    fileInput.addEventListener("change", (e) => addPickedFiles(e.target.files));
-    photoInput.addEventListener("change", (e) => addPickedFiles(e.target.files));
 
-    // mevcut dosyalar
     let existingFiles = [];
     if (existingId) existingFiles = await DB.files.byAppointment(existingId);
 
@@ -427,7 +386,17 @@ const Appointments = (() => {
     }
     renderPending();
 
-    // Müşteri seçilince bilgileri doldur
+    const fileInput = el("input", { type: "file", name: "files", multiple: true,
+      accept: ".pdf,.jpg,.jpeg,.png,.docx,image/*,application/pdf",
+      onChange: (e) => addPickedFiles(e.target.files) });
+
+    const customerSelect = el("select", { name: "customerId" }, [
+      el("option", { value: "", text: "— Yeni Müşteri —" }),
+      ...customers.map((c) =>
+        el("option", { value: String(c.id), text: `${c.name}${c.phone ? " · " + c.phone : ""}` })
+      ),
+    ]);
+    customerSelect.value = appt.customerId ? String(appt.customerId) : "";
     customerSelect.addEventListener("change", () => {
       const id = Number(customerSelect.value);
       const c = customers.find((x) => x.id === id);
@@ -435,33 +404,22 @@ const Appointments = (() => {
         nameInput.value = c.name || "";
         phoneInput.value = c.phone || "";
         emailInput.value = c.email || "";
-        companyInput.value = c.company || "";
         addressInput.value = c.address || "";
       }
     });
 
     form.append(
-      field("Tarih", dateInput),
-      field("Saat", timeInput),
+      field("Düğün Tarihi", dateInput),
       field("Kayıtlı Müşteri", customerSelect, true),
       field("Müşteri Adı", nameInput),
       field("Telefon", phoneInput),
       field("E-posta", emailInput),
-      field("Firma", companyInput),
-      field("Adres", addressInput),
-      field("Google Maps Konumu", mapsInput, true),
-      field("Hizmet Türü", serviceInput),
-      field("Proje Adı", projectInput),
-      field("Tahmini Ücret (₺)", feeInput),
-      field("Tahsil Edilen (₺)", paidInput),
-      field("Ödeme Durumu", paymentSelect),
+      field("Adres", addressInput, true),
+      field("Hizmet Türü", serviceSelect),
       field("Durum", statusSelect),
-      field("Öncelik", prioritySelect),
       field("Notlar", notesInput, true),
-      field("Dosya Ekle (PDF/JPG/PNG/DOCX)", fileInput, true),
-      field("Fotoğraf Ekle", photoInput, true),
+      field("Dosya Ekle", fileInput, true),
       el("div", { class: "field-full" }, [fileListBox]),
-      serviceList
     );
 
     const m = modal({
@@ -478,10 +436,9 @@ const Appointments = (() => {
           class: "btn-primary",
           onClick: async ({ close }) => {
             const data = collect(form);
-            if (!data.date || !data.time) { toast("Tarih ve saat zorunlu", "error"); return; }
+            if (!data.date) { toast("Tarih zorunlu", "error"); return; }
             if (!data.customerName && !data.customerId) { toast("Müşteri adı girin veya kayıtlı müşteri seçin", "error"); return; }
 
-            // kayıtlı müşteri seçilmişse adı ondan al
             if (data.customerId) {
               const c = customers.find((x) => x.id === Number(data.customerId));
               if (c && !data.customerName) data.customerName = c.name;
@@ -490,8 +447,6 @@ const Appointments = (() => {
               data.customerId = await ensureCustomer(data, customers);
             }
 
-            data.fee = Number(data.fee) || 0;
-            data.paid = Number(data.paid) || 0;
             data.updatedAt = new Date().toISOString();
 
             let apptId = existingId;
@@ -504,7 +459,6 @@ const Appointments = (() => {
               apptId = await DB.appointments.add(data);
             }
 
-            // dosyaları Storage'a yükle ve kaydet
             for (const f of pendingFiles) {
               const { path, url } = await DB.files.upload(f.file);
               await DB.files.add({
@@ -582,7 +536,6 @@ const Appointments = (() => {
     });
     node.appendChild(el("div", { class: "appt-card-bar" }));
     const body = el("div", { class: "appt-card-body" });
-    body.appendChild(el("div", { class: "appt-time", text: appt.time || "" }));
     body.appendChild(el("div", { class: "appt-title", text: appt.customerName || "(isimsiz)" }));
     if (!compact) {
       if (appt.service) body.appendChild(el("div", { class: "appt-sub", text: appt.service }));
@@ -605,8 +558,6 @@ const Appointments = (() => {
     const appt = await DB.appointments.get(id);
     if (!appt) return;
     const s = Constants.statusMeta(appt.status);
-    const p = Constants.priorityMeta(appt.priority);
-    const pay = Constants.paymentMeta(appt.payment);
     const files = await DB.files.byAppointment(id);
 
     const wrap = el("div", { class: "detail" });
@@ -619,28 +570,16 @@ const Appointments = (() => {
     wrap.append(
       el("div", { class: "detail-badges" }, [
         el("span", { class: "badge", style: `background:${s.color}22;color:${s.color}`, text: s.label }),
-        el("span", { class: "badge", style: `background:${p.color}22;color:${p.color}`, text: "Öncelik: " + p.label }),
-        el("span", { class: "badge", style: `background:${pay.color}22;color:${pay.color}`, text: pay.label }),
+        appt.service ? el("span", { class: "badge", text: appt.service }) : null,
       ]),
-      row("Tarih", Utils.formatDate(appt.date) + " · " + (appt.time || "")),
+      row("Tarih", Utils.formatDate(appt.date)),
       row("Müşteri", appt.customerName),
       row("Telefon", appt.phone),
       row("E-posta", appt.email),
-      row("Firma", appt.company),
       row("Adres", appt.address),
-      row("Hizmet", appt.service),
-      row("Proje", appt.project),
-      row("Tahmini Ücret", Utils.formatMoney(appt.fee)),
-      row("Tahsil Edilen", Utils.formatMoney(appt.paid)),
-      row("Kalan", Utils.formatMoney((appt.fee || 0) - (appt.paid || 0))),
+      row("Hizmet Türü", appt.service),
       appt.notes ? el("div", { class: "detail-notes", text: appt.notes }) : null
     );
-
-    if (appt.mapsUrl) {
-      wrap.appendChild(el("a", { class: "btn btn-secondary btn-sm", href: appt.mapsUrl, target: "_blank", rel: "noopener" }, [
-        el("span", { class: "btn-ico", html: Utils.icon("pin", 16) }), "Haritada Aç",
-      ]));
-    }
 
     if (files.length) {
       const fl = el("div", { class: "detail-files" });
@@ -671,7 +610,7 @@ const Appointments = (() => {
     });
   }
 
-  return { openForm, openDetail, remove, card, defaultServices };
+  return { openForm, openDetail, remove, card };
 })();
 
 window.Appointments = Appointments;
